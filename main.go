@@ -1,32 +1,88 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 	"time"
 )
 
 type model struct{}
 
-var alpha float64
-var beta float64
+var numberOfTries int
+var numberOfTowns int
+var numberOfAnts int
+var mapRange int
+var trailPreference float64
+var distancePreference float64
+var pheremoneStrength float64
+var evaporationRate float64
 var randSource *rand.Rand
 
-func main() {
-	alpha = 1
-	beta = 5
+var bestAnt ant
+var averageScore float64
+
+func initializeGlobals() {
+	numberOfTries = 100
+	numberOfTowns = 20
+	numberOfAnts = 16
+	mapRange = 20
+	trailPreference = 1
+	distancePreference = 1
+	pheremoneStrength = 1
+	evaporationRate = 0.8
 	randSource = rand.New(rand.NewSource(time.Now().UnixNano()))
-	towns := createTowns(10, 100)
+}
 
-	myAnt := createAnt(10)
-	myAnt.visitTown(towns[0])
+type message struct {
+	Name string
+	Body string
+	Time int64
+}
 
-	for len(myAnt.tour) < 10 {
-		fmt.Println(myAnt.tour)
-		myAnt.visitNextTown(towns)
+func main() {
+	initializeGlobals()
+
+	towns := createTowns(numberOfTowns, mapRange)
+	var bestAnt ant
+	//towns := createBasicTowns(numberOfTowns)
+	var ants []ant
+	for i := 0; i < numberOfTries; i++ {
+		ants = createAntSlice(numberOfAnts, towns)
+		for i := range towns.townSlice {
+			towns.townSlice[i].updateTrails(ants)
+			towns.clearProbabilityMatrix()
+		}
+		//fmt.Printf("%+v", home)
+		//fmt.Printf("%+v", towns)
+		//fmt.Printf("%+v", ants)
+
+		bestAnt, averageScore = analyzeAnts(ants)
+		//fmt.Println("Best Ant:")
+		//bestAnt.printAnt()
+		fmt.Println("Average Score:", averageScore)
+	}
+	so := createSigmaObject(&towns, &bestAnt)
+	fmt.Printf("%+v\n", so)
+
+	//m := message{"Alice", "Hello", 1294706395881547000}
+	soJSON, err := json.Marshal(so)
+
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	//fmt.Printf("%+v", home)
-	//fmt.Printf("%+v", towns)
-	fmt.Printf("%+v", myAnt)
+	f, err := os.Create("../simpleserver/data1.json")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	n, err := f.Write(soJSON)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Wrote:", n)
+
+	printAnts(ants)
 }
