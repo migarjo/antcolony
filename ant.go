@@ -113,7 +113,3 @@ func analyzeAnts(ants []ant) (ant, float64) {
 	}
 	return bestAnt, scoreTotal / float64(len(ants))
 }
-
-func (a *ant) createPathFromTour() {
-
-}
