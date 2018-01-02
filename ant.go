@@ -1,7 +1,11 @@
 package antcolony
 
-import "math"
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+)
 
 type ant struct {
 	id            int
@@ -9,6 +13,11 @@ type ant struct {
 	visited       []bool
 	probabilities []float64
 	score         float64
+}
+
+type AverageScoreOverTime struct {
+	Generation   []int     `json:"labels"`
+	AverageScore []float64 `json:"series"`
 }
 
 func createAnt(thisID int, townQty int) ant {
@@ -112,4 +121,33 @@ func analyzeAnts(ants []ant) (ant, float64) {
 		}
 	}
 	return bestAnt, scoreTotal / float64(len(ants))
+}
+
+func (a *AverageScoreOverTime) add(score float64) {
+	(*a).Generation = append((*a).Generation, len((*a).Generation))
+	(*a).AverageScore = append((*a).AverageScore, score)
+}
+
+func (a *AverageScoreOverTime) jsonify() []byte {
+	aJSON, err := json.Marshal(*a)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	return aJSON
+}
+
+func (a *AverageScoreOverTime) writeToFile(path string) {
+	aJSON := (*a).jsonify()
+
+	f, err := os.Create(path)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	n, err := f.Write(aJSON)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Wrote:", n, "objects")
 }

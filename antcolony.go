@@ -1,7 +1,6 @@
 package antcolony
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 )
@@ -39,33 +38,35 @@ type message struct {
 	Time int64
 }
 
-func SolveTSP() []byte {
+func SolveTSP() ([]byte, []byte) {
 	initializeGlobals()
 
 	towns := createTowns(numberOfTowns, mapRange)
+
 	var bestAnt ant
-	//towns := createBasicTowns(numberOfTowns)
 	var ants []ant
+
+	averageArray := AverageScoreOverTime{
+		Generation:   []int{},
+		AverageScore: []float64{},
+	}
 	for i := 0; i < numberOfTries; i++ {
 		ants = createAntSlice(numberOfAnts, towns)
 		for i := range towns.townSlice {
 			towns.townSlice[i].updateTrails(ants)
 			towns.clearProbabilityMatrix()
 		}
-		//fmt.Printf("%+v", home)
-		//fmt.Printf("%+v", towns)
-		//fmt.Printf("%+v", ants)
 
 		bestAnt, averageScore = analyzeAnts(ants)
-		//fmt.Println("Best Ant:")
-		//bestAnt.printAnt()
-		fmt.Println("Average Score:", averageScore)
+
+		averageArray.add(averageScore)
 	}
 	so := createSigmaObject(&towns, &bestAnt)
 	// fmt.Printf("%+v\n", so)
 
 	soJSON := so.jsonify()
+	averageArrayJSON := averageArray.jsonify()
 
-	return soJSON
+	return soJSON, averageArrayJSON
 
 }
