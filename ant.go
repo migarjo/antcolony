@@ -1,4 +1,4 @@
-package main
+package antcolony
 
 import "math"
 import "fmt"

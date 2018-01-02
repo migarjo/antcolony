@@ -1,4 +1,4 @@
-package main
+package antcolony
 
 import (
 	"encoding/json"
@@ -41,7 +41,7 @@ type message struct {
 	Time int64
 }
 
-func main() {
+func OptimizeTSP() {
 	initializeGlobals()
 
 	towns := createTowns(numberOfTowns, mapRange)
@@ -66,7 +66,6 @@ func main() {
 	so := createSigmaObject(&towns, &bestAnt)
 	fmt.Printf("%+v\n", so)
 
-	//m := message{"Alice", "Hello", 1294706395881547000}
 	soJSON, err := json.Marshal(so)
 
 	if err != nil {
