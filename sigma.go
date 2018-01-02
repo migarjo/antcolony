@@ -1,7 +1,9 @@
 package antcolony
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 )
 
@@ -68,4 +70,28 @@ func (o *SigmaObject) addSigmaEdges(a ant) {
 		}
 		(*o).Edges = append((*o).Edges, edge)
 	}
+}
+
+func (o *SigmaObject) jsonify() []byte {
+	soJSON, err := json.Marshal(*o)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	return soJSON
+}
+
+func (o *SigmaObject) writeToFile(path string) {
+	soJSON := (*o).jsonify()
+
+	f, err := os.Create(path)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	n, err := f.Write(soJSON)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Wrote:", n, "objects")
 }

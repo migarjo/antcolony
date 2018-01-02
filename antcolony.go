@@ -1,10 +1,8 @@
 package antcolony
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/rand"
-	"os"
 	"time"
 )
 
@@ -41,7 +39,7 @@ type message struct {
 	Time int64
 }
 
-func OptimizeTSP() {
+func SolveTSP() []byte {
 	initializeGlobals()
 
 	towns := createTowns(numberOfTowns, mapRange)
@@ -64,24 +62,10 @@ func OptimizeTSP() {
 		fmt.Println("Average Score:", averageScore)
 	}
 	so := createSigmaObject(&towns, &bestAnt)
-	fmt.Printf("%+v\n", so)
+	// fmt.Printf("%+v\n", so)
 
-	soJSON, err := json.Marshal(so)
+	soJSON := so.jsonify()
 
-	if err != nil {
-		fmt.Println(err)
-	}
+	return soJSON
 
-	f, err := os.Create("../simpleserver/data1.json")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	n, err := f.Write(soJSON)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("Wrote:", n)
-
-	printAnts(ants)
 }
