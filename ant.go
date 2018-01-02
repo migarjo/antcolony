@@ -15,9 +15,10 @@ type ant struct {
 	score         float64
 }
 
-type AverageScoreOverTime struct {
+type ProgressOverTime struct {
 	Generation   []int     `json:"labels"`
-	AverageScore []float64 `json:"series"`
+	AverageScore []float64 `json:"average"`
+	MinimumScore []float64 `json:"minimum"`
 }
 
 func createAnt(thisID int, townQty int) ant {
@@ -123,29 +124,30 @@ func analyzeAnts(ants []ant) (ant, float64) {
 	return bestAnt, scoreTotal / float64(len(ants))
 }
 
-func (a *AverageScoreOverTime) add(score float64) {
-	(*a).Generation = append((*a).Generation, len((*a).Generation))
-	(*a).AverageScore = append((*a).AverageScore, score)
+func (p *ProgressOverTime) add(averageScore float64, minimumScore float64) {
+	(*p).Generation = append((*p).Generation, len((*p).Generation))
+	(*p).AverageScore = append((*p).AverageScore, averageScore)
+	(*p).MinimumScore = append((*p).MinimumScore, minimumScore)
 }
 
-func (a *AverageScoreOverTime) jsonify() []byte {
-	aJSON, err := json.Marshal(*a)
+func (p *ProgressOverTime) jsonify() []byte {
+	pJSON, err := json.Marshal(*p)
 
 	if err != nil {
 		fmt.Println(err)
 	}
-	return aJSON
+	return pJSON
 }
 
-func (a *AverageScoreOverTime) writeToFile(path string) {
-	aJSON := (*a).jsonify()
+func (p *ProgressOverTime) writeToFile(path string) {
+	pJSON := (*p).jsonify()
 
 	f, err := os.Create(path)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	n, err := f.Write(aJSON)
+	n, err := f.Write(pJSON)
 	if err != nil {
 		fmt.Println(err)
 	}

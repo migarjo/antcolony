@@ -46,12 +46,17 @@ func SolveTSP() ([]byte, []byte) {
 	var bestAnt ant
 	var ants []ant
 
-	averageArray := AverageScoreOverTime{
+	progressArray := ProgressOverTime{
 		Generation:   []int{},
 		AverageScore: []float64{},
 	}
 	for i := 0; i < numberOfTries; i++ {
 		ants = createAntSlice(numberOfAnts, towns)
+
+		if i > 0 {
+			ants = append(ants, bestAnt)
+		}
+
 		for i := range towns.townSlice {
 			towns.townSlice[i].updateTrails(ants)
 			towns.clearProbabilityMatrix()
@@ -59,14 +64,14 @@ func SolveTSP() ([]byte, []byte) {
 
 		bestAnt, averageScore = analyzeAnts(ants)
 
-		averageArray.add(averageScore)
+		progressArray.add(averageScore, bestAnt.score)
 	}
 	so := createSigmaObject(&towns, &bestAnt)
 	// fmt.Printf("%+v\n", so)
 
 	soJSON := so.jsonify()
-	averageArrayJSON := averageArray.jsonify()
+	progressArrayJSON := progressArray.jsonify()
 
-	return soJSON, averageArrayJSON
+	return soJSON, progressArrayJSON
 
 }
