@@ -37,6 +37,7 @@ type message struct {
 	Time int64
 }
 
+// CreateTowns from scratch based on the Number of Towns and Map Range specified in the environment variables
 func CreateTowns() Towns {
 	if numberOfTries == 0 {
 		initializeGlobals()
@@ -45,6 +46,7 @@ func CreateTowns() Towns {
 	return ts
 }
 
+// SolveTSP for the Towns provided and returns JSON files for the optimum map and the average and best score over time
 func SolveTSP(ts Towns) ([]byte, []byte) {
 	if numberOfTries == 0 {
 		initializeGlobals()
@@ -56,8 +58,9 @@ func SolveTSP(ts Towns) ([]byte, []byte) {
 	ts.resetTrails()
 
 	progressArray := ProgressOverTime{
-		Generation:   []int{},
+		Iteration:    []int{},
 		AverageScore: []float64{},
+		MinimumScore: []float64{},
 	}
 	for i := 0; i < numberOfTries; i++ {
 		ants = createAntSlice(numberOfAnts, ts)

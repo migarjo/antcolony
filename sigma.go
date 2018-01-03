@@ -7,11 +7,13 @@ import (
 	"strconv"
 )
 
+// SigmaObject is the struct that represents a map in sigma.js syntax
 type SigmaObject struct {
 	Nodes []SigmaNode `json:"nodes"`
 	Edges []SigmaEdge `json:"edges"`
 }
 
+// SigmaNode is the struct that represents each town as a node in sigma.js syntax
 type SigmaNode struct {
 	ID    string `json:"id"`
 	Label string `json:"label"`
@@ -20,6 +22,7 @@ type SigmaNode struct {
 	Size  string `json:"size"`
 }
 
+// SigmaEdge is the struct that represents each edge between towns in sigma.js syntax
 type SigmaEdge struct {
 	ID     string `json:"id"`
 	Source string `json:"source"`

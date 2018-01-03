@@ -15,8 +15,9 @@ type ant struct {
 	score         float64
 }
 
+// ProgressOverTime tracks performance metrics of the ACO, such as AverageScore and MinimumScore for each Iteration
 type ProgressOverTime struct {
-	Generation   []int     `json:"labels"`
+	Iteration    []int     `json:"labels"`
 	AverageScore []float64 `json:"average"`
 	MinimumScore []float64 `json:"minimum"`
 }
@@ -125,7 +126,7 @@ func analyzeAnts(ants []ant) (ant, float64) {
 }
 
 func (p *ProgressOverTime) add(averageScore float64, minimumScore float64) {
-	(*p).Generation = append((*p).Generation, len((*p).Generation))
+	(*p).Iteration = append((*p).Iteration, len((*p).Iteration))
 	(*p).AverageScore = append((*p).AverageScore, averageScore)
 	(*p).MinimumScore = append((*p).MinimumScore, minimumScore)
 }

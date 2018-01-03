@@ -7,6 +7,7 @@ import (
 	"os"
 )
 
+// Town is the Node struct for each destination in the TSP
 type Town struct {
 	ID        int
 	XCoord    int
@@ -15,6 +16,7 @@ type Town struct {
 	Trails    []float64
 }
 
+// Towns is the collection of nodes for the TSP, with a matrix of the probability of traversing between each town
 type Towns struct {
 	TownSlice         []Town
 	ProbabilityMatrix [][]float64
