@@ -9,11 +9,12 @@ import (
 
 // Town is the Node struct for each destination in the TSP
 type Town struct {
-	ID        int
-	XCoord    int
-	YCoord    int
-	Distances []float64
-	Trails    []float64
+	ID         int
+	XCoord     int
+	YCoord     int
+	Distances  []float64
+	Trails     []float64
+	Properties map[string]string
 }
 
 // Towns is the collection of nodes for the TSP, with a matrix of the probability of traversing between each town
@@ -32,7 +33,14 @@ func createBasicTowns(n int) Towns {
 	}
 
 	for i := 0; i < n; i++ {
-		thisTown := Town{i, i, 0, []float64{}, make([]float64, n)}
+		thisTown := Town{
+			ID:         i,
+			XCoord:     i,
+			YCoord:     0,
+			Distances:  []float64{},
+			Trails:     make([]float64, n),
+			Properties: make(map[string]string),
+		}
 		for i := range thisTown.Trails {
 			thisTown.Trails[i] = 1
 		}
@@ -66,7 +74,13 @@ func createTowns(n int, fieldSize int) Towns {
 	}
 
 	for i := 0; i < n; i++ {
-		thisTown := Town{i, randSource.Intn(fieldSize - 1), randSource.Intn(fieldSize - 1), []float64{}, make([]float64, n)}
+		thisTown := Town{
+			ID:        i,
+			XCoord:    randSource.Intn(fieldSize - 1),
+			YCoord:    randSource.Intn(fieldSize - 1),
+			Distances: []float64{},
+			Trails:    make([]float64, n),
+		}
 		for i := range thisTown.Trails {
 			thisTown.Trails[i] = 1
 		}
@@ -89,7 +103,7 @@ func createTowns(n int, fieldSize int) Towns {
 	return towns
 }
 
-func (ts *Towns) resetTrails() {
+func (ts *Towns) clearTrails() {
 	for i := range (*ts).TownSlice {
 		for j := range (*ts).TownSlice[i].Trails {
 			(*ts).TownSlice[i].Trails[j] = 1
@@ -97,10 +111,10 @@ func (ts *Towns) resetTrails() {
 	}
 }
 
-func (t *Towns) clearProbabilityMatrix() {
-	for i := range (*t).ProbabilityMatrix {
-		for j := range (*t).ProbabilityMatrix[i] {
-			(*t).ProbabilityMatrix[i][j] = 0
+func (ts *Towns) clearProbabilityMatrix() {
+	for i := range (*ts).ProbabilityMatrix {
+		for j := range (*ts).ProbabilityMatrix[i] {
+			(*ts).ProbabilityMatrix[i][j] = 0
 		}
 	}
 }

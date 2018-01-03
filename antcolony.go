@@ -55,7 +55,7 @@ func SolveTSP(ts Towns) ([]byte, []byte) {
 	var bestAnt ant
 	var ants []ant
 
-	ts.resetTrails()
+	ts.clearTrails()
 
 	progressArray := ProgressOverTime{
 		Iteration:    []int{},
