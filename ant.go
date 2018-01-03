@@ -70,7 +70,7 @@ func (a *ant) visitTown(t Town, ts []Town) {
 	(*a).tour = append((*a).tour, t.ID)
 	(*a).visited[t.ID] = true
 	if len((*a).tour) > 1 {
-		(*a).score += getDistance(t, ts[(*a).tour[len((*a).tour)-2]])
+		(*a).score += getDistanceFromXY(t, ts[(*a).tour[len((*a).tour)-2]])
 	}
 }
 
@@ -83,7 +83,7 @@ func (a *ant) visitNextTown(ts Towns) {
 	}
 	(*a).tour = append((*a).tour, i)
 	(*a).visited[i] = true
-	(*a).score += getDistance(ts.TownSlice[i], ts.TownSlice[(*a).tour[len((*a).tour)-2]])
+	(*a).score += getDistanceFromXY(ts.TownSlice[i], ts.TownSlice[(*a).tour[len((*a).tour)-2]])
 }
 
 func (a ant) printAnt() {
