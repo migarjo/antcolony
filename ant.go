@@ -32,23 +32,23 @@ func createAnt(thisID int, townQty int) ant {
 	return thisAnt
 }
 
-func (a *ant) getProbabilityList(ts towns) {
+func (a *ant) getProbabilityList(ts Towns) {
 	// Current location
 	i := (*a).tour[len((*a).tour)-1]
-	t := ts.townSlice[i]
-	n := len(ts.townSlice)
+	t := ts.TownSlice[i]
+	n := len(ts.TownSlice)
 
 	denom := 0.0
 	numerator := make([]float64, n)
 
 	for l := 0; l < n; l++ {
 		if !(*a).visited[l] {
-			if ts.probabilityMatrix[i][l] != 0 {
-				numerator[l] = ts.probabilityMatrix[i][l]
+			if ts.ProbabilityMatrix[i][l] != 0 {
+				numerator[l] = ts.ProbabilityMatrix[i][l]
 				denom += numerator[l]
 			} else {
-				numerator[l] = math.Pow(t.trails[l], trailPreference) * math.Pow(1.0/t.distances[l], distancePreference)
-				ts.probabilityMatrix[i][l] = numerator[l]
+				numerator[l] = math.Pow(t.Trails[l], trailPreference) * math.Pow(1.0/t.Distances[l], distancePreference)
+				ts.ProbabilityMatrix[i][l] = numerator[l]
 				denom += numerator[l]
 			}
 		}
@@ -65,15 +65,15 @@ func (a *ant) getProbabilityList(ts towns) {
 	//fmt.Println("AntProbability", (*a).probabilities)
 }
 
-func (a *ant) visitTown(t town, ts []town) {
-	(*a).tour = append((*a).tour, t.id)
-	(*a).visited[t.id] = true
+func (a *ant) visitTown(t Town, ts []Town) {
+	(*a).tour = append((*a).tour, t.ID)
+	(*a).visited[t.ID] = true
 	if len((*a).tour) > 1 {
 		(*a).score += getDistance(t, ts[(*a).tour[len((*a).tour)-2]])
 	}
 }
 
-func (a *ant) visitNextTown(ts towns) {
+func (a *ant) visitNextTown(ts Towns) {
 	(*a).getProbabilityList(ts)
 	randFloat := randSource.Float64()
 	i := 0
@@ -82,7 +82,7 @@ func (a *ant) visitNextTown(ts towns) {
 	}
 	(*a).tour = append((*a).tour, i)
 	(*a).visited[i] = true
-	(*a).score += getDistance(ts.townSlice[i], ts.townSlice[(*a).tour[len((*a).tour)-2]])
+	(*a).score += getDistance(ts.TownSlice[i], ts.TownSlice[(*a).tour[len((*a).tour)-2]])
 }
 
 func (a ant) printAnt() {
@@ -95,17 +95,17 @@ func printAnts(a []ant) {
 	}
 }
 
-func createAntSlice(n int, ts towns) []ant {
+func createAntSlice(n int, ts Towns) []ant {
 	ants := []ant{}
 
 	for a := 0; a < n; a++ {
-		myAnt := createAnt(a, len(ts.townSlice))
-		myAnt.visitTown(ts.townSlice[0], ts.townSlice)
+		myAnt := createAnt(a, len(ts.TownSlice))
+		myAnt.visitTown(ts.TownSlice[0], ts.TownSlice)
 
-		for len(myAnt.tour) < len(ts.townSlice) {
+		for len(myAnt.tour) < len(ts.TownSlice) {
 			myAnt.visitNextTown(ts)
 		}
-		myAnt.visitTown(ts.townSlice[0], ts.townSlice)
+		myAnt.visitTown(ts.TownSlice[0], ts.TownSlice)
 
 		ants = append(ants, myAnt)
 	}

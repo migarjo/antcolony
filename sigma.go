@@ -28,7 +28,7 @@ type SigmaEdge struct {
 	Size   string `json:"size,omitempty"`
 }
 
-func createSigmaObject(ts *towns, a *ant) SigmaObject {
+func createSigmaObject(ts *Towns, a *ant) SigmaObject {
 	so := SigmaObject{
 		Nodes: []SigmaNode{},
 		Edges: []SigmaEdge{},
@@ -44,13 +44,13 @@ func createSigmaObject(ts *towns, a *ant) SigmaObject {
 	return so
 }
 
-func (o *SigmaObject) addSigmaNodes(ts towns) {
-	for _, t := range ts.townSlice {
+func (o *SigmaObject) addSigmaNodes(ts Towns) {
+	for _, t := range ts.TownSlice {
 		node := SigmaNode{
-			ID:    strconv.Itoa(t.id),
-			Label: strconv.Itoa(t.id) + " (" + strconv.Itoa(t.xCoord) + "," + strconv.Itoa(t.yCoord) + ")",
-			X:     strconv.Itoa(t.xCoord),
-			Y:     strconv.Itoa(t.yCoord),
+			ID:    strconv.Itoa(t.ID),
+			Label: strconv.Itoa(t.ID) + " (" + strconv.Itoa(t.XCoord) + "," + strconv.Itoa(t.YCoord) + ")",
+			X:     strconv.Itoa(t.XCoord),
+			Y:     strconv.Itoa(t.YCoord),
 			Size:  "1",
 		}
 		(*o).Nodes = append((*o).Nodes, node)

@@ -17,11 +17,10 @@ var pheremoneStrength float64
 var evaporationRate float64
 var randSource *rand.Rand
 
-var bestAnt ant
 var averageScore float64
 
 func initializeGlobals() {
-	numberOfTries = 100
+	numberOfTries = 50
 	numberOfTowns = 20
 	numberOfAnts = 16
 	mapRange = 20
@@ -38,35 +37,45 @@ type message struct {
 	Time int64
 }
 
-func SolveTSP() ([]byte, []byte) {
-	initializeGlobals()
+func CreateTowns() Towns {
+	if numberOfTries == 0 {
+		initializeGlobals()
+	}
+	ts := createTowns(numberOfTowns, mapRange)
+	return ts
+}
 
-	towns := createTowns(numberOfTowns, mapRange)
+func SolveTSP(ts Towns) ([]byte, []byte) {
+	if numberOfTries == 0 {
+		initializeGlobals()
+	}
 
 	var bestAnt ant
 	var ants []ant
+
+	ts.resetTrails()
 
 	progressArray := ProgressOverTime{
 		Generation:   []int{},
 		AverageScore: []float64{},
 	}
 	for i := 0; i < numberOfTries; i++ {
-		ants = createAntSlice(numberOfAnts, towns)
+		ants = createAntSlice(numberOfAnts, ts)
 
 		if i > 0 {
 			ants = append(ants, bestAnt)
 		}
 
-		for i := range towns.townSlice {
-			towns.townSlice[i].updateTrails(ants)
-			towns.clearProbabilityMatrix()
+		for i := range ts.TownSlice {
+			ts.TownSlice[i].updateTrails(ants)
+			ts.clearProbabilityMatrix()
 		}
 
 		bestAnt, averageScore = analyzeAnts(ants)
 
 		progressArray.add(averageScore, bestAnt.score)
 	}
-	so := createSigmaObject(&towns, &bestAnt)
+	so := createSigmaObject(&ts, &bestAnt)
 	// fmt.Printf("%+v\n", so)
 
 	soJSON := so.jsonify()
