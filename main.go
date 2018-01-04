@@ -67,5 +67,6 @@ func main() {
 	} else {
 		port = ":8000"
 	}
+	fmt.Println("Port set to", port)
 	http.ListenAndServe(port, nil)
 }
