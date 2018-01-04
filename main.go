@@ -60,5 +60,5 @@ func main() {
 
 	http.HandleFunc("/status", status)
 	http.HandleFunc("/api/solvetsp", solvetsp)
-	http.ListenAndServe(":8000", nil)
+	http.ListenAndServe(":8080", nil)
 }
