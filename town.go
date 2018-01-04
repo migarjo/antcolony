@@ -1,4 +1,4 @@
-package antcolony
+package main
 
 import (
 	"encoding/json"
@@ -9,18 +9,65 @@ import (
 
 // Town is the Node struct for each destination in the TSP
 type Town struct {
-	ID         int
-	XCoord     int
-	YCoord     int
-	Distances  []float64
-	Trails     []float64
-	Properties map[string]string
+	ID        int       `json:"id,omitEmpty"`
+	XCoord    int       `json:"xCoord,omitEmpty"`
+	YCoord    int       `json:"yCoord,omitEmpty"`
+	Distances []float64 `json:"distances,omitEmpty"`
+	Trails    []float64 `json:"-"`
+	Score     float64   `json:"scores,omitEmpty"`
 }
 
 // Towns is the collection of nodes for the TSP, with a matrix of the probability of traversing between each town
 type Towns struct {
 	TownSlice         []Town
 	ProbabilityMatrix [][]float64
+}
+
+// Town is the transfer object for converting Venue into an antcolony Town object
+type TownTransferObject struct {
+	ID        int       `json:"id,omitEmpty"`
+	Distances []float64 `json:"distances,omitEmpty"`
+	Score     float64   `json:"scores,omitEmpty"`
+}
+
+// Towns is the transfer object for converting Venues into an antcolony Towns object
+type TownsTransferObject struct {
+	TownSlice []TownTransferObject `json:"town"`
+}
+
+func createTownsFromDistances(ts []byte) (Towns, error) {
+	// n := len(distances)
+	//distances [][]float64, scores []float64
+	townsTransferObject := TownsTransferObject{}
+	err := json.Unmarshal(ts, &townsTransferObject)
+	fmt.Println("ErrorUnmarshalling?:", err)
+	fmt.Println("tto: ", townsTransferObject)
+	if err != nil {
+		return Towns{}, err
+	}
+	n := len(townsTransferObject.TownSlice)
+	towns := Towns{
+		TownSlice:         []Town{},
+		ProbabilityMatrix: make([][]float64, n),
+	}
+
+	for i := range towns.ProbabilityMatrix {
+		towns.ProbabilityMatrix[i] = make([]float64, n)
+	}
+
+	for _, tto := range townsTransferObject.TownSlice {
+		town := Town{
+			ID:        tto.ID,
+			Distances: tto.Distances,
+			Score:     tto.Score,
+			Trails:    make([]float64, n),
+		}
+		for j := range town.Trails {
+			town.Trails[j] = 1
+		}
+		towns.TownSlice = append(towns.TownSlice, town)
+	}
+	return towns, nil
 }
 
 func createBasicTowns(n int) Towns {
@@ -34,12 +81,12 @@ func createBasicTowns(n int) Towns {
 
 	for i := 0; i < n; i++ {
 		thisTown := Town{
-			ID:         i,
-			XCoord:     i,
-			YCoord:     0,
-			Distances:  []float64{},
-			Trails:     make([]float64, n),
-			Properties: make(map[string]string),
+			ID:        i,
+			XCoord:    i,
+			YCoord:    0,
+			Distances: []float64{},
+			Trails:    make([]float64, n),
+			Score:     1,
 		}
 		for i := range thisTown.Trails {
 			thisTown.Trails[i] = 1
@@ -54,7 +101,7 @@ func createBasicTowns(n int) Towns {
 			if i == j {
 				ti.Distances = append(ti.Distances, 1)
 			} else {
-				ti.Distances = append(ti.Distances, getDistance(ti, tj))
+				ti.Distances = append(ti.Distances, getDistanceFromXY(ti, tj))
 			}
 		}
 		towns.TownSlice[i] = ti
@@ -80,6 +127,7 @@ func createTowns(n int, fieldSize int) Towns {
 			YCoord:    randSource.Intn(fieldSize - 1),
 			Distances: []float64{},
 			Trails:    make([]float64, n),
+			Score:     1,
 		}
 		for i := range thisTown.Trails {
 			thisTown.Trails[i] = 1
@@ -94,7 +142,7 @@ func createTowns(n int, fieldSize int) Towns {
 			if i == j {
 				ti.Distances = append(ti.Distances, 1)
 			} else {
-				ti.Distances = append(ti.Distances, getDistance(ti, tj))
+				ti.Distances = append(ti.Distances, getDistanceFromXY(ti, tj))
 			}
 		}
 		towns.TownSlice[i] = ti
@@ -140,7 +188,7 @@ func (t *Town) updateTrails(ants []ant) {
 	// fmt.Println("After:", (*t).trails)
 }
 
-func getDistance(ta Town, tb Town) float64 {
+func getDistanceFromXY(ta Town, tb Town) float64 {
 	return math.Sqrt(float64(ta.XCoord-tb.XCoord)*float64(ta.XCoord-tb.XCoord) + float64(ta.YCoord-tb.YCoord)*float64(ta.YCoord-tb.YCoord))
 }
 

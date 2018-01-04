@@ -1,4 +1,4 @@
-package antcolony
+package main
 
 type jsonable interface {
 	jsonify() []byte

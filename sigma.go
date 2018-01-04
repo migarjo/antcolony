@@ -1,26 +1,10 @@
-package antcolony
+package main
 
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 )
-
-// SigmaObject is the struct that represents a map in sigma.js syntax
-type SigmaObject struct {
-	Nodes []SigmaNode `json:"nodes"`
-	Edges []SigmaEdge `json:"edges"`
-}
-
-// SigmaNode is the struct that represents each town as a node in sigma.js syntax
-type SigmaNode struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
-	X     string `json:"x"`
-	Y     string `json:"y"`
-	Size  string `json:"size"`
-}
 
 // SigmaEdge is the struct that represents each edge between towns in sigma.js syntax
 type SigmaEdge struct {
@@ -31,38 +15,9 @@ type SigmaEdge struct {
 	Size   string `json:"size,omitempty"`
 }
 
-func createSigmaObject(ts *Towns, a *ant) SigmaObject {
-	so := SigmaObject{
-		Nodes: []SigmaNode{},
-		Edges: []SigmaEdge{},
-	}
+func exportSigmaEdges(a ant) string {
 
-	if ts != nil {
-		so.addSigmaNodes(*ts)
-	}
-
-	if a != nil {
-		so.addSigmaEdges(*a)
-	}
-	return so
-}
-
-func (o *SigmaObject) addSigmaNodes(ts Towns) {
-	for _, t := range ts.TownSlice {
-		node := SigmaNode{
-			ID:    strconv.Itoa(t.ID),
-			Label: strconv.Itoa(t.ID) + " (" + strconv.Itoa(t.XCoord) + "," + strconv.Itoa(t.YCoord) + ")",
-			X:     strconv.Itoa(t.XCoord),
-			Y:     strconv.Itoa(t.YCoord),
-			Size:  "1",
-		}
-		(*o).Nodes = append((*o).Nodes, node)
-	}
-}
-
-func (o *SigmaObject) addSigmaEdges(a ant) {
-	fmt.Println("BestAnt:")
-	a.printAnt()
+	edges := []SigmaEdge{}
 	for i := 1; i < len(a.tour); i++ {
 
 		edge := SigmaEdge{
@@ -71,30 +26,13 @@ func (o *SigmaObject) addSigmaEdges(a ant) {
 			Target: strconv.Itoa(a.tour[i]),
 			Size:   "1",
 		}
-		(*o).Edges = append((*o).Edges, edge)
+		edges = append(edges, edge)
 	}
-}
 
-func (o *SigmaObject) jsonify() []byte {
-	soJSON, err := json.Marshal(*o)
+	edgeJSON, err := json.Marshal(edges)
 
 	if err != nil {
 		fmt.Println(err)
 	}
-	return soJSON
-}
-
-func (o *SigmaObject) writeToFile(path string) {
-	soJSON := (*o).jsonify()
-
-	f, err := os.Create(path)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	n, err := f.Write(soJSON)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("Wrote:", n, "objects")
+	return string(edgeJSON[:])
 }

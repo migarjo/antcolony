@@ -1,4 +1,4 @@
-package antcolony
+package main
 
 import (
 	"encoding/json"
@@ -83,7 +83,7 @@ func (a *ant) visitNextTown(ts Towns) {
 	}
 	(*a).tour = append((*a).tour, i)
 	(*a).visited[i] = true
-	(*a).score += getDistanceFromXY(ts.TownSlice[i], ts.TownSlice[(*a).tour[len((*a).tour)-2]])
+	(*a).score += ts.TownSlice[i].Distances[(*a).tour[len((*a).tour)-2]]
 }
 
 func (a ant) printAnt() {
