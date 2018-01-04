@@ -63,7 +63,7 @@ func main() {
 	http.HandleFunc("/api/solvetsp", solvetsp)
 	var port string
 	if os.Getenv("PORT") != "" {
-		port = os.Getenv("PORT")
+		port = ":" + os.Getenv("PORT")
 	} else {
 		port = ":8000"
 	}
