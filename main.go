@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -60,5 +61,11 @@ func main() {
 
 	http.HandleFunc("/status", status)
 	http.HandleFunc("/api/solvetsp", solvetsp)
-	http.ListenAndServe(":8080", nil)
+	var port string
+	if os.Getenv("PORT") != "" {
+		port = os.Getenv("PORT")
+	} else {
+		port = ":8000"
+	}
+	http.ListenAndServe(port, nil)
 }
