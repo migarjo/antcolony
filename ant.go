@@ -70,7 +70,7 @@ func (a *ant) visitTown(t Town, ts []Town) {
 	(*a).tour = append((*a).tour, t.ID)
 	(*a).visited[t.ID] = true
 	if len((*a).tour) > 1 {
-		(*a).score += getDistanceFromXY(t, ts[(*a).tour[len((*a).tour)-2]])
+		(*a).score += ts[len((*a).tour)-1].Distances[(*a).tour[len((*a).tour)-2]]
 	}
 }
 
