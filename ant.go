@@ -3,16 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 )
 
-type ant struct {
-	id            int
-	tour          []int
-	visited       []bool
-	probabilities []float64
-	score         float64
+type Ant struct {
+	ID            int
+	Tour          []int
+	Visited       []bool
+	Probabilities []float64
+	Score         float64
 }
 
 // ProgressOverTime tracks performance metrics of the ACO, such as AverageScore and MinimumScore for each Iteration
@@ -22,103 +21,98 @@ type ProgressOverTime struct {
 	MinimumScore []float64 `json:"minimum"`
 }
 
-func createAnt(thisID int, townQty int) ant {
-	thisAnt := ant{
-		id:            thisID,
-		tour:          []int{},
-		visited:       make([]bool, townQty),
-		probabilities: make([]float64, townQty),
-		score:         0,
+func createAnt(thisID int, townQty int) Ant {
+	thisAnt := Ant{
+		ID:            thisID,
+		Tour:          []int{},
+		Visited:       make([]bool, townQty),
+		Probabilities: make([]float64, townQty),
+		Score:         0,
 	}
 	return thisAnt
 }
 
-func (a *ant) getProbabilityList(ts Towns) {
+func (a *Ant) getProbabilityList(ts Towns) {
 	// Current location
-	i := (*a).tour[len((*a).tour)-1]
-	t := ts.TownSlice[i]
+	i := (*a).Tour[len((*a).Tour)-1]
 	n := len(ts.TownSlice)
 
 	denom := 0.0
 	numerator := make([]float64, n)
 
 	for l := 0; l < n; l++ {
-		if !(*a).visited[l] {
-			if ts.ProbabilityMatrix[i][l] != 0 {
-				numerator[l] = ts.ProbabilityMatrix[i][l]
-				denom += numerator[l]
-			} else {
-				numerator[l] = math.Pow(t.Trails[l], trailPreference) * math.Pow(1.0/t.Distances[l], distancePreference)
-				ts.ProbabilityMatrix[i][l] = numerator[l]
-				denom += numerator[l]
-			}
+		if !(*a).Visited[l] {
+			numerator[l] = ts.ProbabilityMatrix[i][l]
+			denom += numerator[l]
 		}
 	}
-	(*a).probabilities[0] = 0
+	(*a).Probabilities[0] = 0
 	for j := 1; j < n; j++ {
-		if (*a).visited[j] {
-			(*a).probabilities[j] = (*a).probabilities[j-1]
+		if (*a).Visited[j] {
+			(*a).Probabilities[j] = (*a).Probabilities[j-1]
 		} else {
-			(*a).probabilities[j] = (*a).probabilities[j-1] + numerator[j]/denom
+			(*a).Probabilities[j] = (*a).Probabilities[j-1] + numerator[j]/denom
 		}
 	}
 	//fmt.Println("PM:", ts.probabilityMatrix)
 	//fmt.Println("AntProbability", (*a).probabilities)
 }
 
-func (a *ant) visitTown(t Town, ts []Town) {
-	(*a).tour = append((*a).tour, t.ID)
-	(*a).visited[t.ID] = true
-	if len((*a).tour) > 1 {
-		(*a).score += ts[len((*a).tour)-1].Distances[(*a).tour[len((*a).tour)-2]]
+func (a *Ant) visitHome(ts Towns) {
+	(*a).Tour = append((*a).Tour, ts.TownSlice[0].ID)
+	(*a).Visited[ts.TownSlice[0].ID] = true
+	if len((*a).Tour) > 1 {
+		(*a).Score += ts.TownSlice[(*a).Tour[len((*a).Tour)-1]].Distances[(*a).Tour[len((*a).Tour)-2]]
 	}
 }
 
-func (a *ant) visitNextTown(ts Towns) {
+func (a *Ant) visitNextTown(ts Towns) {
 	(*a).getProbabilityList(ts)
 	randFloat := randSource.Float64()
 	i := 0
-	for randFloat > (*a).probabilities[i] {
+	for randFloat > (*a).Probabilities[i] {
 		i++
 	}
-	(*a).tour = append((*a).tour, i)
-	(*a).visited[i] = true
-	(*a).score += ts.TownSlice[i].Distances[(*a).tour[len((*a).tour)-2]]
+	(*a).Tour = append((*a).Tour, i)
+	(*a).Visited[i] = true
+	(*a).Score += ts.TownSlice[i].Distances[(*a).Tour[len((*a).Tour)-2]]
 }
 
-func (a ant) printAnt() {
-	fmt.Println(a.tour, a.score)
+func (a *Ant) printAnt() {
+	fmt.Println((*a).Tour, (*a).Score)
 }
 
-func printAnts(a []ant) {
-	for _, ant := range a {
-		ant.printAnt()
+func printAnts(a []Ant) {
+	for _, Ant := range a {
+		Ant.printAnt()
 	}
 }
 
-func createAntSlice(n int, ts Towns) []ant {
-	ants := []ant{}
+func createAntSlice(n int, ts Towns) []Ant {
+	ants := []Ant{}
 
 	for a := 0; a < n; a++ {
 		myAnt := createAnt(a, len(ts.TownSlice))
-		myAnt.visitTown(ts.TownSlice[0], ts.TownSlice)
 
-		for len(myAnt.tour) < len(ts.TownSlice) {
+		myAnt.visitHome(ts)
+
+		for len(myAnt.Tour) < len(ts.TownSlice) {
 			myAnt.visitNextTown(ts)
 		}
-		myAnt.visitTown(ts.TownSlice[0], ts.TownSlice)
+
+		myAnt.visitHome(ts)
 
 		ants = append(ants, myAnt)
 	}
 	return ants
 }
 
-func analyzeAnts(ants []ant) (ant, float64) {
+func analyzeAnts(ants []Ant) (Ant, float64) {
 	bestAnt := ants[0]
 	scoreTotal := 0.0
 	for _, a := range ants {
-		scoreTotal += a.score
-		if a.score < bestAnt.score {
+		scoreTotal += a.Score
+		if a.Score < bestAnt.Score {
 			bestAnt = a
 		}
 	}
@@ -131,9 +125,9 @@ func (p *ProgressOverTime) add(averageScore float64, minimumScore float64) {
 	(*p).MinimumScore = append((*p).MinimumScore, minimumScore)
 }
 
-func exportAnt(a ant) string {
+func (a *Ant) exportAnt() string {
 
-	antJSON, err := json.Marshal(a)
+	antJSON, err := json.Marshal(*a)
 
 	if err != nil {
 		fmt.Println(err)

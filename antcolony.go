@@ -8,12 +8,12 @@ import (
 type model struct{}
 
 type Results struct {
-	BestAnt       ant              `json:"bestant"`
+	BestAnt       Ant              `json:"bestant"`
 	ProgressArray ProgressOverTime `json:"progress"`
 	Towns         Towns            `json:"towns"`
 }
 
-func exportResults(a ant, p ProgressOverTime, ts Towns) string {
+func exportResults(a Ant, p ProgressOverTime, ts Towns) string {
 	results := Results{
 		BestAnt:       a,
 		ProgressArray: p,
@@ -34,8 +34,8 @@ func SolveTSP(towns []byte) (string, error) {
 		initializeGlobals()
 	}
 
-	var bestAnt ant
-	var ants []ant
+	var bestAnt Ant
+	var ants []Ant
 
 	ts, err := createTownsFromDistances(towns)
 	if err != nil {
@@ -50,6 +50,7 @@ func SolveTSP(towns []byte) (string, error) {
 	}
 	for i := 0; i < numberOfTries; i++ {
 		fmt.Println("i:", i)
+		ts.calculateProbabilityMatrix()
 		ants = createAntSlice(numberOfAnts, ts)
 
 		if i > 0 {
@@ -58,12 +59,12 @@ func SolveTSP(towns []byte) (string, error) {
 
 		for j := range ts.TownSlice {
 			ts.TownSlice[j].updateTrails(ants)
-			ts.clearProbabilityMatrix()
+			ts.calculateProbabilityMatrix()
 		}
 
 		bestAnt, averageScore = analyzeAnts(ants)
 
-		progressArray.add(averageScore, bestAnt.score)
+		progressArray.add(averageScore, bestAnt.Score)
 	}
 	//antJSON := exportAnt(bestAnt)
 	// fmt.Printf("%+v\n", so)
