@@ -45,15 +45,15 @@ func solvetsp(w http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 	log.Println(string(body))
-	solution, progressArray, err := SolveTSP(body)
+	results, err := SolveTSP(body)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error %s", err),
 			http.StatusInternalServerError)
 		return
 	}
-	log.Println(progressArray)
+
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	fmt.Fprintln(w, solution)
+	fmt.Fprintln(w, results)
 }
 
 func main() {

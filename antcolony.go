@@ -1,13 +1,35 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
 type model struct{}
 
+type Results struct {
+	BestAnt       ant              `json:"bestant"`
+	ProgressArray ProgressOverTime `json:"progress"`
+	Towns         Towns            `json:"towns"`
+}
+
+func exportResults(a ant, p ProgressOverTime, ts Towns) string {
+	results := Results{
+		BestAnt:       a,
+		ProgressArray: p,
+		Towns:         ts,
+	}
+
+	resultsJSON, err := json.Marshal(results)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	return string(resultsJSON[:])
+}
+
 // SolveTSP for the Towns provided and returns JSON files for the optimum map and the average and best score over time
-func SolveTSP(towns []byte) (string, string, error) {
+func SolveTSP(towns []byte) (string, error) {
 	if numberOfTries == 0 {
 		initializeGlobals()
 	}
@@ -17,7 +39,7 @@ func SolveTSP(towns []byte) (string, string, error) {
 
 	ts, err := createTownsFromDistances(towns)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	ts.clearTrails()
 
@@ -43,11 +65,13 @@ func SolveTSP(towns []byte) (string, string, error) {
 
 		progressArray.add(averageScore, bestAnt.score)
 	}
-	edgeJSON := exportSigmaEdges(bestAnt)
+	//antJSON := exportAnt(bestAnt)
 	// fmt.Printf("%+v\n", so)
-	fmt.Println(averageScore)
-	progressArrayJSON := string(progressArray.jsonify()[:])
+	//fmt.Println(averageScore)
+	//progressArrayJSON := string(progressArray.jsonify()[:])
 
-	return edgeJSON, progressArrayJSON, nil
+	resultsJSON := exportResults(bestAnt, progressArray, ts)
+
+	return resultsJSON, nil
 
 }

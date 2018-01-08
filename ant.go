@@ -131,6 +131,16 @@ func (p *ProgressOverTime) add(averageScore float64, minimumScore float64) {
 	(*p).MinimumScore = append((*p).MinimumScore, minimumScore)
 }
 
+func exportAnt(a ant) string {
+
+	antJSON, err := json.Marshal(a)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	return string(antJSON[:])
+}
+
 func (p *ProgressOverTime) jsonify() []byte {
 	pJSON, err := json.Marshal(*p)
 
