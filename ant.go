@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+// Ant The representation of a single entity traversing a path throughout the towns
 type Ant struct {
 	ID            int
 	Tour          []int

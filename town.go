@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strconv"
 )
 
 // Town is the Node struct for each destination in the TSP
@@ -18,40 +19,39 @@ type Town struct {
 // Towns is the collection of nodes for the TSP, with a matrix of the probability of traversing between each town
 type Towns struct {
 	TownSlice         []Town      `json:"towns"`
-	ProbabilityMatrix [][]float64 `json:"probabilitymatrix"`
+	ProbabilityMatrix [][]float64 `json:"-"`
 }
 
-func createTownsFromDistances(ts []byte) (Towns, error) {
-	towns := Towns{}
-	err := json.Unmarshal(ts, &towns)
+func (ts *Towns) initializeTowns() error {
+	n := len((*ts).TownSlice)
 
-	if err != nil {
-		return towns, err
+	if n == 0 {
+		return ApplicationError{"No towns provided"}
 	}
-	n := len(towns.TownSlice)
+	if n == 1 {
+		return ApplicationError{"Only one town provided"}
+	}
 
-	if len(towns.TownSlice[0].Trails) == 0 {
-		for i := range towns.TownSlice {
-			towns.TownSlice[i].Trails = make([]float64, n)
+	for i, t := range (*ts).TownSlice {
+		if len(t.Distances) != len((*ts).TownSlice) {
+			return ApplicationError{"Number of distances for town: " + strconv.Itoa(t.ID) + " is inconsistent with total number of towns"}
+		}
+		if len(t.Trails) == 0 {
+			(*ts).TownSlice[i].Trails = make([]float64, n)
+			for j := range (*ts).TownSlice[i].Trails {
+				(*ts).TownSlice[i].Trails[j] = 1
+			}
 		}
 	}
 
-	if len(towns.ProbabilityMatrix) == 0 {
-		towns.ProbabilityMatrix = make([][]float64, n)
-		for i := range towns.ProbabilityMatrix {
-			towns.ProbabilityMatrix[i] = make([]float64, n)
+	if len((*ts).ProbabilityMatrix) == 0 {
+		(*ts).ProbabilityMatrix = make([][]float64, n)
+		for i := range (*ts).ProbabilityMatrix {
+			(*ts).ProbabilityMatrix[i] = make([]float64, n)
 		}
 	}
 
-	return towns, nil
-}
-
-func (ts *Towns) clearTrails() {
-	for i := range (*ts).TownSlice {
-		for j := range (*ts).TownSlice[i].Trails {
-			(*ts).TownSlice[i].Trails[j] = 1
-		}
-	}
+	return nil
 }
 
 func (ts *Towns) clearProbabilityMatrix() {
@@ -62,34 +62,27 @@ func (ts *Towns) clearProbabilityMatrix() {
 	}
 }
 
-func (t *Town) updateTrails(ants []Ant) {
-	// fmt.Println("Before:", (*t).trails)
+func (t *Town) updateTrails(ants []Ant, config AcoConfig) {
 	for i := range (*t).Trails {
-		(*t).Trails[i] *= evaporationRate
+		(*t).Trails[i] *= config.EvaporationRate
 	}
-	// fmt.Println("Town:", (*t).id)
 	for _, a := range ants {
-		contribution := pheremoneStrength / a.Score
-		// a.printAnt()
+		contribution := config.PheremoneStrength / a.Score
 		for j, myTour := range a.Tour {
 			if myTour == (*t).ID {
-				// fmt.Println("Before:", (*t).trails)
 				(*t).Trails[a.Tour[j+1]] += contribution
-				// fmt.Println("After:", (*t).trails)
 				break
 			}
 		}
 	}
-	// fmt.Println("After:", (*t).trails)
 }
 
-func (ts *Towns) calculateProbabilityMatrix() {
+func (ts *Towns) calculateProbabilityMatrix(config AcoConfig) {
 	for i, t := range (*ts).TownSlice {
 		for j := range (*ts).TownSlice[i].Trails {
-			(*ts).ProbabilityMatrix[i][j] = math.Pow(t.Trails[j], trailPreference) * math.Pow(1.0/t.Distances[j], distancePreference)
+			(*ts).ProbabilityMatrix[i][j] = math.Pow(t.Trails[j], config.TrailPreference) * math.Pow(1.0/t.Distances[j], config.DistancePreference)
 		}
 	}
-
 }
 
 func (t *Town) jsonify() []byte {

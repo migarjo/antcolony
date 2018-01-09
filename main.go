@@ -7,32 +7,17 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"reflect"
 	"time"
 )
 
-var numberOfTries int
-var numberOfAnts int
-var trailPreference float64
-var distancePreference float64
-var pheremoneStrength float64
-var evaporationRate float64
+var antRatio float64
 var averageScore float64
 var randSource *rand.Rand
 
 func initializeGlobals() {
-	numberOfTries = 50
-	numberOfAnts = 16
-	trailPreference = 1
-	distancePreference = 1
-	pheremoneStrength = 1
-	evaporationRate = 0.8
+	antRatio = 0.8
 	randSource = rand.New(rand.NewSource(time.Now().UnixNano()))
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
 }
 
 func status(w http.ResponseWriter, req *http.Request) {
@@ -42,12 +27,22 @@ func status(w http.ResponseWriter, req *http.Request) {
 func solvetsp(w http.ResponseWriter, req *http.Request) {
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		panic(err)
+		log.Println("Error:", err)
+		http.Error(w, fmt.Sprintf("Error %s", err),
+			http.StatusInternalServerError)
+		return
 	}
-	log.Println(string(body))
 	results, err := SolveTSP(body)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error %s", err),
+		if reflect.TypeOf(err) == reflect.TypeOf(ApplicationError{}) {
+			log.Println("Error:", err)
+			http.Error(w, fmt.Sprintf("Error: %s", err),
+				http.StatusBadRequest)
+			return
+		}
+
+		log.Println("Error:", err)
+		http.Error(w, fmt.Sprintln("An internal server error has occurred. If problem persists, please contact support"),
 			http.StatusInternalServerError)
 		return
 	}
@@ -69,5 +64,7 @@ func main() {
 	}
 	fmt.Println("Port set to", port)
 	err := http.ListenAndServe(port, nil)
-	check(err)
+	if err != nil {
+		log.Panicln(err)
+	}
 }
