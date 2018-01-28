@@ -10,9 +10,11 @@ import (
 type AcoConfig struct {
 	NumberOfIterations int     `json:"numberofiterations"`
 	TrailPreference    float64 `json:"trailpreference"`
+	ScorePreference    float64 `json:"scorepreference"`
 	DistancePreference float64 `json:"distancepreference"`
 	PheremoneStrength  float64 `json:"pherememonestrength"`
 	EvaporationRate    float64 `json:"evaporationrate"`
+	MaximizeScore      bool    `json:"maximizescore"`
 }
 
 // Inputs Input parameters, including configuration and towns
@@ -49,6 +51,8 @@ func importInputs(inputsJSON []byte) (AcoConfig, Towns, error) {
 			NumberOfIterations: 50,
 			TrailPreference:    1,
 			DistancePreference: 1,
+			ScorePreference:    0,
+			MaximizeScore:      true,
 			PheremoneStrength:  1,
 			EvaporationRate:    .8,
 		},
@@ -73,7 +77,7 @@ func SolveTSP(towns []byte) (string, error) {
 	var bestAnt Ant
 	var ants []Ant
 
-	err = ts.initializeTowns()
+	err = ts.initializeTowns(config)
 	if err != nil {
 		return "", err
 	}

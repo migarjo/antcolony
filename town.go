@@ -10,10 +10,11 @@ import (
 
 // Town is the Node struct for each destination in the TSP
 type Town struct {
-	ID        int       `json:"id,omitEmpty"`
-	Distances []float64 `json:"distances,omitEmpty"`
-	Trails    []float64 `json:"trails,omitEmpty"`
-	Score     float64   `json:"scores,omitEmpty"`
+	ID              int       `json:"id,omitEmpty"`
+	Distances       []float64 `json:"distances,omitEmpty"`
+	Trails          []float64 `json:"trails,omitEmpty"`
+	Score           float64   `json:"scores,omitEmpty"`
+	NormalizedScore float64   `json:"-"`
 }
 
 // Towns is the collection of nodes for the TSP, with a matrix of the probability of traversing between each town
@@ -22,7 +23,7 @@ type Towns struct {
 	ProbabilityMatrix [][]float64 `json:"-"`
 }
 
-func (ts *Towns) initializeTowns() error {
+func (ts *Towns) initializeTowns(config AcoConfig) error {
 	n := len((*ts).TownSlice)
 
 	if n == 0 {
@@ -51,6 +52,8 @@ func (ts *Towns) initializeTowns() error {
 		}
 	}
 
+	(*ts).normalizeTownScores(config)
+
 	return nil
 }
 
@@ -77,10 +80,51 @@ func (t *Town) updateTrails(ants []Ant, config AcoConfig) {
 	}
 }
 
+func (ts *Towns) normalizeTownScores(config AcoConfig) {
+	if config.ScorePreference == 0 {
+		for i := range ts.TownSlice {
+			(*ts).TownSlice[i].NormalizedScore = 0
+		}
+	} else {
+		maxScore := ts.TownSlice[0].Score
+		minScore := ts.TownSlice[0].Score
+		minDistance := ts.TownSlice[0].Distances[1]
+		for i := range ts.TownSlice {
+			if ts.TownSlice[i].Score > maxScore {
+				maxScore = ts.TownSlice[i].Score
+			}
+			if ts.TownSlice[i].Score < maxScore {
+				minScore = ts.TownSlice[i].Score
+			}
+			for j := range ts.TownSlice[i].Distances {
+				if ts.TownSlice[i].Distances[j] > 0 && ts.TownSlice[i].Distances[j] < minDistance {
+					minDistance = ts.TownSlice[i].Distances[j]
+				}
+			}
+		}
+		maxDistanceFactor := 1.0 / minDistance
+
+		if minScore == maxScore {
+			for i := range ts.TownSlice {
+				(*ts).TownSlice[i].NormalizedScore = 0
+			}
+		} else {
+			if config.MaximizeScore == true {
+				for i := range ts.TownSlice {
+					(*ts).TownSlice[i].NormalizedScore = config.ScorePreference * maxDistanceFactor * ((*ts).TownSlice[i].Score - minScore) / (maxScore - minScore)
+					fmt.Println("NormalizedScore in town:", i, "equals", (*ts).TownSlice[i].NormalizedScore)
+				}
+			}
+		}
+	}
+}
+
 func (ts *Towns) calculateProbabilityMatrix(config AcoConfig) {
+
 	for i, t := range (*ts).TownSlice {
 		for j := range (*ts).TownSlice[i].Trails {
-			(*ts).ProbabilityMatrix[i][j] = math.Pow(t.Trails[j], config.TrailPreference) * math.Pow(1.0/t.Distances[j], config.DistancePreference)
+			(*ts).ProbabilityMatrix[i][j] = math.Pow(t.Trails[j], config.TrailPreference) * math.Pow((1.0/t.Distances[j]+t.NormalizedScore), config.DistancePreference)
+			fmt.Println(i, j, (*ts).ProbabilityMatrix[i][j])
 		}
 	}
 }
@@ -94,15 +138,6 @@ func (t *Town) jsonify() []byte {
 	return tJSON
 }
 
-func (ts *Towns) jsonify() []byte {
-	tsJSON, err := json.Marshal(*ts)
-
-	if err != nil {
-		fmt.Println(err)
-	}
-	return tsJSON
-}
-
 func (t *Town) writeToFile(path string) {
 	tJSON := (*t).jsonify()
 
@@ -112,21 +147,6 @@ func (t *Town) writeToFile(path string) {
 	}
 
 	n, err := f.Write(tJSON)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("Wrote:", n, "objects")
-}
-
-func (ts *Towns) writeToFile(path string) {
-	tsJSON := (*ts).jsonify()
-
-	f, err := os.Create(path)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	n, err := f.Write(tsJSON)
 	if err != nil {
 		fmt.Println(err)
 	}

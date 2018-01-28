@@ -32,6 +32,7 @@ func solvetsp(w http.ResponseWriter, req *http.Request) {
 			http.StatusInternalServerError)
 		return
 	}
+	fmt.Println(string(body[:]))
 	results, err := SolveTSP(body)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(ApplicationError{}) {
