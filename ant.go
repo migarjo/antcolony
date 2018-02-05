@@ -8,11 +8,13 @@ import (
 
 // Ant The representation of a single entity traversing a path throughout the towns
 type Ant struct {
-	ID            int
-	Tour          []int
-	Visited       []bool
-	Probabilities []float64
-	Score         float64
+	ID               int
+	Tour             []int
+	Visited          []bool
+	Probabilities    []float64
+	Score            float64
+	DistanceTraveled float64
+	AverageRating    float64
 }
 
 // ProgressOverTime tracks performance metrics of the ACO, such as AverageScore and MinimumScore for each Iteration
@@ -24,30 +26,44 @@ type ProgressOverTime struct {
 
 func createAnt(thisID int, townQty int) Ant {
 	thisAnt := Ant{
-		ID:            thisID,
-		Tour:          []int{},
-		Visited:       make([]bool, townQty),
-		Probabilities: make([]float64, townQty),
-		Score:         0,
+		ID:               thisID,
+		Tour:             []int{},
+		Visited:          make([]bool, townQty),
+		Probabilities:    make([]float64, townQty),
+		Score:            0,
+		DistanceTraveled: 0,
+		AverageRating:    0,
 	}
 	return thisAnt
 }
 
 func (a *Ant) getProbabilityList(ts Towns) {
-	// Current location
-	i := (*a).Tour[len((*a).Tour)-1]
 	n := len(ts.TownSlice)
-
 	denom := 0.0
 	numerator := make([]float64, n)
 
-	for l := 0; l < n; l++ {
-		if !(*a).Visited[l] {
-			numerator[l] = ts.ProbabilityMatrix[i][l]
-			denom += numerator[l]
+	if ts.IncludesHome {
+		// Current location
+		currentLocation := (*a).Tour[len((*a).Tour)-1]
+
+		for i := 0; i < n; i++ {
+			if !(*a).Visited[i] {
+				numerator[i] = ts.ProbabilityMatrix[currentLocation][i]
+				denom += numerator[i]
+			}
 		}
+		(*a).Probabilities[0] = 0
+	} else {
+		for i, t := range ts.TownSlice {
+			if !(*a).Visited[i] {
+				numerator[i] = t.Rating
+				denom += t.Rating
+			}
+
+		}
+		(*a).Probabilities[0] = numerator[0] / denom
 	}
-	(*a).Probabilities[0] = 0
+
 	for j := 1; j < n; j++ {
 		if (*a).Visited[j] {
 			(*a).Probabilities[j] = (*a).Probabilities[j-1]
@@ -55,15 +71,22 @@ func (a *Ant) getProbabilityList(ts Towns) {
 			(*a).Probabilities[j] = (*a).Probabilities[j-1] + numerator[j]/denom
 		}
 	}
-	//fmt.Println("PM:", ts.probabilityMatrix)
-	//fmt.Println("AntProbability", (*a).probabilities)
+
 }
 
 func (a *Ant) visitHome(ts Towns) {
-	(*a).Tour = append((*a).Tour, ts.TownSlice[0].ID)
-	(*a).Visited[ts.TownSlice[0].ID] = true
-	if len((*a).Tour) > 1 {
-		(*a).Score += ts.TownSlice[(*a).Tour[len((*a).Tour)-1]].Distances[(*a).Tour[len((*a).Tour)-2]]
+	if ts.IncludesHome {
+		(*a).Tour = append((*a).Tour, ts.TownSlice[0].ID)
+		(*a).Visited[ts.TownSlice[0].ID] = true
+	}
+}
+
+func (a *Ant) returnHome(ts Towns) {
+	if ts.IncludesHome {
+		(*a).Tour = append((*a).Tour, ts.TownSlice[0].ID)
+		distance := ts.TownSlice[(*a).Tour[len((*a).Tour)-1]].Distances[(*a).Tour[len((*a).Tour)-2]]
+		(*a).Score += distance
+		(*a).DistanceTraveled += distance
 	}
 }
 
@@ -71,12 +94,24 @@ func (a *Ant) visitNextTown(ts Towns) {
 	(*a).getProbabilityList(ts)
 	randFloat := randSource.Float64()
 	i := 0
+	fmt.Println((*a).Probabilities)
 	for randFloat > (*a).Probabilities[i] {
 		i++
 	}
 	(*a).Tour = append((*a).Tour, i)
+	tourLength := float64(len((*a).Tour))
 	(*a).Visited[i] = true
-	(*a).Score += ts.TownSlice[i].Distances[(*a).Tour[len((*a).Tour)-2]]
+	normalizedRating := ts.TownSlice[i].NormalizedRating
+	if tourLength > 1 {
+		distance := ts.TownSlice[i].Distances[(*a).Tour[len((*a).Tour)-2]]
+		(*a).Score += 1 / (1/distance + normalizedRating)
+		(*a).DistanceTraveled += distance
+		(*a).AverageRating = (((*a).AverageRating*(tourLength-1) + ts.TownSlice[i].Rating) / tourLength)
+	} else {
+		(*a).Score += 1 / normalizedRating
+		(*a).AverageRating = ts.TownSlice[i].Rating
+	}
+
 }
 
 func (a *Ant) printAnt() {
@@ -89,7 +124,7 @@ func printAnts(a []Ant) {
 	}
 }
 
-func createAntSlice(n int, ts Towns) []Ant {
+func createAntSlice(n int, ts Towns, config AcoConfig) []Ant {
 	ants := []Ant{}
 
 	for a := 0; a < n; a++ {
@@ -97,11 +132,11 @@ func createAntSlice(n int, ts Towns) []Ant {
 
 		myAnt.visitHome(ts)
 
-		for len(myAnt.Tour) < len(ts.TownSlice) {
+		for len(myAnt.Tour) < config.VisitQuantity {
 			myAnt.visitNextTown(ts)
 		}
 
-		myAnt.visitHome(ts)
+		myAnt.returnHome(ts)
 
 		ants = append(ants, myAnt)
 	}

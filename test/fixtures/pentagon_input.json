@@ -1,6 +1,7 @@
 { 
 	"config":  {
-		"numberofiterations": 10
+        "numberofiterations": 10,
+        "visitQuantity": 4
 	},
 	"towns":{
 		"towns": [

@@ -31,4 +31,15 @@ func TestImportInputs(t *testing.T) {
 	if err != nil {
 		t.Error("Received error marshalling input: ", err)
 	}
+	if config.VisitQuantity != 4 {
+		t.Error("Expected visit quantity to be 4, got", config.VisitQuantity)
+	}
+
+	inputJSON = readFixture("pentagon_input.json")
+	config, towns, err = importInputs(inputJSON)
+
+	if config.VisitQuantity != 4 {
+		t.Error("Expected visit quantity to be 4, got", config.VisitQuantity)
+	}
+
 }

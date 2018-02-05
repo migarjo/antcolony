@@ -11,7 +11,7 @@ func TestInitializeTowns(t *testing.T) {
 
 }
 
-func TestZeroScorePreference(t *testing.T) {
+func TestZeroRatingPreference(t *testing.T) {
 	inputJSON := readFixture("input.json")
 	config, towns, err := importInputs(inputJSON)
 
@@ -19,26 +19,26 @@ func TestZeroScorePreference(t *testing.T) {
 		t.Error("Received error marshalling input: ", err)
 	}
 
-	towns.normalizeTownScores(config)
+	towns.normalizeTownRatings(config)
 	for i, town := range towns.TownSlice {
-		if town.NormalizedScore != 0 {
-			t.Error("NormalizedScore in town:", i, "equals", town.NormalizedScore, "but should be 0 when ScorePreferene equals 0.")
+		if town.NormalizedRating != 1 {
+			t.Error("NormalizedRating in town:", i, "equals", town.NormalizedRating, "but should be 1 when RatingPreference equals 0.")
 		}
 	}
 
-	config.ScorePreference = 1
+	config.RatingPreference = 1
 
-	towns.normalizeTownScores(config)
+	towns.normalizeTownRatings(config)
 	for i, town := range towns.TownSlice {
-		if town.NormalizedScore != 0 {
-			t.Error("NormalizedScore in town:", i, "equals", town.NormalizedScore, "but should be 0 when all scores are equal.")
+		if town.NormalizedRating != 1 {
+			t.Error("NormalizedRating in town:", i, "equals", town.NormalizedRating, "but should be 1 when all Ratings submitted are equal.")
 		}
 	}
 
 }
 
-func TestNormalizeScores(t *testing.T) {
-	inputJSON := readFixture("score_input.json")
+func TestNormalizeRatings(t *testing.T) {
+	inputJSON := readFixture("rating_input.json")
 	config, towns, err := importInputs(inputJSON)
 
 	if err != nil {
@@ -47,17 +47,17 @@ func TestNormalizeScores(t *testing.T) {
 
 	towns.initializeTowns(config)
 
-	expectedNormalizedScore := []float64{0, 0.5, 1}
+	expectedNormalizedRating := []float64{0, 0.5, 1}
 
 	for i, town := range towns.TownSlice {
-		if town.NormalizedScore != expectedNormalizedScore[i] {
-			t.Error("NormalizedScore in town:", i, "equals", town.NormalizedScore, "but expected", expectedNormalizedScore[i])
+		if town.NormalizedRating != expectedNormalizedRating[i] {
+			t.Error("NormalizedRating in town:", i, "equals", town.NormalizedRating, "but expected", expectedNormalizedRating[i])
 		}
 	}
 }
 
 func TestProbabilityMatrix(t *testing.T) {
-	inputJSON := readFixture("score_input.json")
+	inputJSON := readFixture("rating_input.json")
 	config, towns, err := importInputs(inputJSON)
 
 	if err != nil {
