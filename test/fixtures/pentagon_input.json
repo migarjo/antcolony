@@ -1,6 +1,6 @@
 { 
 	"config":  {
-        "numberofiterations": 10,
+        "numberOfIterations": 10,
         "visitQuantity": 4
 	},
 	"towns":{
@@ -25,7 +25,7 @@
                     1.618,
                     1.618
 				],
-				"rating": 1
+				"rating": 2
 			},
 			{
 				"id": 2,
@@ -36,7 +36,7 @@
                     1,
                     1.618
 				],
-				"rating": 1
+				"rating": 3
 			},
 			{
 				"id": 3,
@@ -47,7 +47,7 @@
                     0,
                     1
 				],
-				"rating": 1
+				"rating": 4
 			},
 			{
 				"id": 4,
@@ -58,7 +58,7 @@
                     1,
                     0
 				],
-				"rating": 1
+				"rating": 5
 			}
 		]
 	}

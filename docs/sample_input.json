@@ -1,0 +1,107 @@
+{ 
+	"config":  {
+        "numberOfIterations": 10,
+        "trailPreference": 1,
+        "ratingPreference": 1,
+        "distancePreference": 1,
+        "pherememoneStrength": 1,
+        "evaporationRate": 0.8,
+        "maximizeRating": true,
+        "visitQuantity": 4
+	},
+	"towns":{
+        "includesHome": true,
+		"towns": [
+			{
+				"id": 0,
+				"distances": [
+					0,
+					1,
+					1.618,
+                    1.618,
+                    1
+				],
+				"trails": [
+					0.1,
+					0.2,
+					0.3,
+                    0.4,
+                    0.5
+				],
+				"rating": 1
+			},
+			{
+				"id": 1,
+				"distances": [
+					1,
+					0,
+					1,
+                    1.618,
+                    1.618
+				],
+				"trails": [
+					0.1,
+					0.2,
+					0.3,
+                    0.4,
+                    0.5
+				],
+				"rating": 1
+			},
+			{
+				"id": 2,
+				"distances": [
+					1.618,
+					1,
+					0,
+                    1,
+                    1.618
+				],
+				"trails": [
+					0.1,
+					0.2,
+					0.3,
+                    0.4,
+                    0.5
+				],
+				"rating": 1
+			},
+			{
+				"id": 3,
+				"distances": [
+					1.618,
+					1.618,
+					1,
+                    0,
+                    1
+				],
+				"trails": [
+					0.1,
+					0.2,
+					0.3,
+                    0.4,
+                    0.5
+				],
+				"rating": 1
+			},
+			{
+				"id": 4,
+				"distances": [
+					1,
+					1.618,
+					1.618,
+                    1,
+                    0
+				],
+				"trails": [
+					0.1,
+					0.2,
+					0.3,
+                    0.4,
+                    0.5
+				],
+				"rating": 1
+			}
+		]
+	}
+}
