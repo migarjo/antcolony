@@ -20,9 +20,10 @@ type Town struct {
 
 // Towns is the collection of nodes for the TSP, with a matrix of the probability of traversing between each town
 type Towns struct {
-	IncludesHome      bool        `json:"includesHome"`
-	TownSlice         []Town      `json:"towns"`
-	ProbabilityMatrix [][]float64 `json:"-"`
+	IncludesHome       bool        `json:"includesHome"`
+	TownSlice          []Town      `json:"towns"`
+	ProbabilityMatrix  [][]float64 `json:"probability"`
+	NoTrailProbability [][]float64 `json:"noTrailProbability"`
 }
 
 func (ts *Towns) initializeTowns(config AcoConfig) error {
@@ -52,6 +53,11 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 		for i := range (*ts).ProbabilityMatrix {
 			(*ts).ProbabilityMatrix[i] = make([]float64, n)
 		}
+	}
+
+	(*ts).NoTrailProbability = make([][]float64, n)
+	for i := range (*ts).NoTrailProbability {
+		(*ts).NoTrailProbability[i] = make([]float64, n)
 	}
 
 	(*ts).normalizeTownRatings(config)
@@ -124,7 +130,18 @@ func (ts *Towns) calculateProbabilityMatrix(config AcoConfig) {
 
 	for i, t := range (*ts).TownSlice {
 		for j := range (*ts).TownSlice[i].Trails {
-			(*ts).ProbabilityMatrix[i][j] = math.Pow(t.Trails[j], config.TrailPreference) * math.Pow((1.0/t.Distances[j]+t.NormalizedRating), config.DistancePreference)
+			probability := math.Pow(t.Trails[j], config.TrailPreference) * math.Pow((1.0/t.Distances[j]+t.NormalizedRating), config.DistancePreference)
+			noTrailProbability := math.Pow((1.0/t.Distances[j] + t.NormalizedRating), config.DistancePreference)
+			if math.IsInf(probability, 0) {
+				(*ts).ProbabilityMatrix[i][j] = 0
+			} else {
+				(*ts).ProbabilityMatrix[i][j] = probability
+			}
+			if math.IsInf(noTrailProbability, 0) {
+				(*ts).NoTrailProbability[i][j] = 0
+			} else {
+				(*ts).NoTrailProbability[i][j] = noTrailProbability
+			}
 		}
 	}
 }

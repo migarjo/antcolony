@@ -108,7 +108,6 @@ func SolveTSP(towns []byte) (string, error) {
 
 		for j := range ts.TownSlice {
 			ts.TownSlice[j].updateTrails(ants, config)
-			ts.calculateProbabilityMatrix(config)
 		}
 
 		bestAnt, averageScore = analyzeAnts(ants)

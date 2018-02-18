@@ -94,7 +94,6 @@ func (a *Ant) visitNextTown(ts Towns) {
 	(*a).getProbabilityList(ts)
 	randFloat := randSource.Float64()
 	i := 0
-	fmt.Println((*a).Probabilities)
 	for randFloat > (*a).Probabilities[i] {
 		i++
 	}
