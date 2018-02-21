@@ -25,6 +25,7 @@ func status(w http.ResponseWriter, req *http.Request) {
 }
 
 func solvetsp(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Println("Error:", err)
@@ -32,6 +33,7 @@ func solvetsp(w http.ResponseWriter, req *http.Request) {
 			http.StatusInternalServerError)
 		return
 	}
+	fmt.Println("Received body:")
 	fmt.Println(string(body[:]))
 	results, err := SolveTSP(body)
 	if err != nil {
@@ -48,7 +50,6 @@ func solvetsp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	fmt.Fprintln(w, results)
 }
 

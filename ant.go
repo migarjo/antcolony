@@ -142,16 +142,17 @@ func createAntSlice(n int, ts Towns, config AcoConfig) []Ant {
 	return ants
 }
 
-func analyzeAnts(ants []Ant) (Ant, float64) {
-	bestAnt := ants[0]
+func analyzeAnts(ants []Ant, bestAnts []Ant) ([]Ant, float64) {
 	scoreTotal := 0.0
 	for _, a := range ants {
 		scoreTotal += a.Score
-		if a.Score < bestAnt.Score {
-			bestAnt = a
+		if len(bestAnts) == 0 || a.Score < bestAnts[len(bestAnts)-1].Score {
+			bestAnts = append(bestAnts, a)
+		} else {
+			bestAnts = append(bestAnts, bestAnts[len(bestAnts)-1])
 		}
 	}
-	return bestAnt, scoreTotal / float64(len(ants))
+	return bestAnts, scoreTotal / float64(len(ants))
 }
 
 func (p *ProgressOverTime) add(averageScore float64, minimumScore float64) {

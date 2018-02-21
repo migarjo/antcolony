@@ -12,10 +12,11 @@ type AcoConfig struct {
 	TrailPreference    float64 `json:"trailPreference"`
 	RatingPreference   float64 `json:"ratingPreference"`
 	DistancePreference float64 `json:"distancePreference"`
-	PheremoneStrength  float64 `json:"pherememoneStrength"`
+	PheremoneStrength  float64 `json:"pheremoneStrength"`
 	EvaporationRate    float64 `json:"evaporationRate"`
 	MaximizeRating     bool    `json:"maximizeRating"`
 	VisitQuantity      int     `json:"visitQuantity"`
+	Verbose            bool    `json:"verbose"`
 }
 
 // Inputs Input parameters, including configuration and towns
@@ -26,14 +27,14 @@ type Inputs struct {
 
 // Results The best ant, progress array, and towns to be returned from the web service
 type Results struct {
-	BestAnt       Ant              `json:"bestant"`
+	BestAnts      []Ant            `json:"bestant"`
 	ProgressArray ProgressOverTime `json:"progress"`
 	Towns         Towns            `json:"towns"`
 }
 
-func exportResults(a Ant, p ProgressOverTime, ts Towns) string {
+func exportResults(as []Ant, p ProgressOverTime, ts Towns) (string, error) {
 	results := Results{
-		BestAnt:       a,
+		BestAnts:      as,
 		ProgressArray: p,
 		Towns:         ts,
 	}
@@ -41,9 +42,11 @@ func exportResults(a Ant, p ProgressOverTime, ts Towns) string {
 	resultsJSON, err := json.Marshal(results)
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error serializing JSON:", err)
+		fmt.Println(results)
+		return "", err
 	}
-	return string(resultsJSON[:])
+	return string(resultsJSON[:]), nil
 }
 
 func importInputs(inputsJSON []byte) (AcoConfig, Towns, error) {
@@ -57,6 +60,7 @@ func importInputs(inputsJSON []byte) (AcoConfig, Towns, error) {
 			PheremoneStrength:  1,
 			EvaporationRate:    .8,
 			VisitQuantity:      0,
+			Verbose:            false,
 		},
 		Towns: Towns{
 			IncludesHome: true,
@@ -67,7 +71,7 @@ func importInputs(inputsJSON []byte) (AcoConfig, Towns, error) {
 	if err != nil {
 		return inputs.AcoConfig, inputs.Towns, ApplicationError{"Error parsing input JSON: " + err.Error()}
 	}
-
+	fmt.Println(inputs.AcoConfig.PheremoneStrength)
 	if inputs.AcoConfig.VisitQuantity == 0 {
 		inputs.AcoConfig.VisitQuantity = len(inputs.Towns.TownSlice)
 	}
@@ -83,7 +87,7 @@ func SolveTSP(towns []byte) (string, error) {
 		return "", err
 	}
 
-	var bestAnt Ant
+	var bestAnts []Ant
 	var ants []Ant
 
 	err = ts.initializeTowns(config)
@@ -99,23 +103,31 @@ func SolveTSP(towns []byte) (string, error) {
 		MinimumScore: []float64{},
 	}
 	for i := 0; i < config.NumberOfIterations; i++ {
+		// fmt.Println("Iteration: ", i)
+		// for _, t := range ts.TownSlice {
+		// 	fmt.Println(t.Trails)
+		// }
+
 		ts.calculateProbabilityMatrix(config)
 		ants = createAntSlice(numberOfAnts, ts, config)
 
 		if i > 0 {
-			ants = append(ants, bestAnt)
+			ants = append(ants, bestAnts[len(bestAnts)-1])
 		}
 
 		for j := range ts.TownSlice {
 			ts.TownSlice[j].updateTrails(ants, config)
 		}
 
-		bestAnt, averageScore = analyzeAnts(ants)
+		bestAnts, averageScore = analyzeAnts(ants, bestAnts)
 
-		progressArray.add(averageScore, bestAnt.Score)
+		progressArray.add(averageScore, bestAnts[len(bestAnts)-1].Score)
 	}
 
-	resultsJSON := exportResults(bestAnt, progressArray, ts)
+	resultsJSON, err := exportResults(bestAnts, progressArray, ts)
+	if err != nil {
+		return "", err
+	}
 
 	return resultsJSON, nil
 
