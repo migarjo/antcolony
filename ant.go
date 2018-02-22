@@ -8,13 +8,13 @@ import (
 
 // Ant The representation of a single entity traversing a path throughout the towns
 type Ant struct {
-	ID               int
-	Tour             []int
-	Visited          []bool
-	Probabilities    []float64
-	Score            float64
-	DistanceTraveled float64
-	AverageRating    float64
+	ID               int       `json:"-"`
+	Tour             []int     `json:"tour"`
+	Visited          []bool    `json:"-"`
+	Probabilities    []float64 `json:"-"`
+	Score            float64   `json:"score"`
+	DistanceTraveled float64   `json:"distanceTraveled"`
+	AverageRating    float64   `json:"averageRating"`
 }
 
 // ProgressOverTime tracks performance metrics of the ACO, such as AverageScore and MinimumScore for each Iteration
