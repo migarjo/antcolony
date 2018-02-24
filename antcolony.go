@@ -27,7 +27,7 @@ type Inputs struct {
 
 // Results The best ant, progress array, and towns to be returned from the web service
 type Results struct {
-	BestAnts      []Ant            `json:"bestant"`
+	BestAnts      []Ant            `json:"bestAnts"`
 	ProgressArray ProgressOverTime `json:"progress"`
 	Towns         Towns            `json:"towns"`
 }
