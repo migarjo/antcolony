@@ -27,23 +27,23 @@ type Inputs struct {
 
 // Results The best ant, progress array, and towns to be returned from the web service
 type Results struct {
-	BestAnts      []Ant            `json:"bestAnts"`
-	ProgressArray ProgressOverTime `json:"progress"`
-	Towns         Towns            `json:"towns"`
+	BestAnts     []Ant            `json:"bestAnts"`
+	AverageArray []AverageResults `json:"averages"`
+	Towns        Towns            `json:"towns"`
 }
 
-func exportResults(as []Ant, p ProgressOverTime, ts Towns) (string, error) {
+func exportResults(as []Ant, a []AverageResults, ts Towns) (string, error) {
 	results := Results{
-		BestAnts:      as,
-		ProgressArray: p,
-		Towns:         ts,
+		BestAnts:     as,
+		AverageArray: a,
+		Towns:        ts,
 	}
 
 	resultsJSON, err := json.Marshal(results)
 
 	if err != nil {
 		fmt.Println("Error serializing JSON:", err)
-		fmt.Println(results)
+		fmt.Printf("%+v\n", results)
 		return "", err
 	}
 	return string(resultsJSON[:]), nil
@@ -97,11 +97,8 @@ func SolveTSP(towns []byte) (string, error) {
 
 	numberOfAnts := int(math.Ceil(antRatio * float64(len(ts.TownSlice))))
 
-	progressArray := ProgressOverTime{
-		Iteration:    []int{},
-		AverageScore: []float64{},
-		MinimumScore: []float64{},
-	}
+	averageArray := []AverageResults{}
+
 	for i := 0; i < config.NumberOfIterations; i++ {
 		// fmt.Println("Iteration: ", i)
 		// for _, t := range ts.TownSlice {
@@ -119,12 +116,11 @@ func SolveTSP(towns []byte) (string, error) {
 			ts.TownSlice[j].updateTrails(ants, config)
 		}
 
-		bestAnts, averageScore = analyzeAnts(ants, bestAnts)
+		bestAnts, averageArray = analyzeAnts(ants, bestAnts, averageArray)
 
-		progressArray.add(averageScore, bestAnts[len(bestAnts)-1].Score)
 	}
 
-	resultsJSON, err := exportResults(bestAnts, progressArray, ts)
+	resultsJSON, err := exportResults(bestAnts, averageArray, ts)
 	if err != nil {
 		return "", err
 	}

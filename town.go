@@ -110,7 +110,7 @@ func (t *Town) updateTrails(ants []Ant, config AcoConfig) {
 func (ts *Towns) normalizeTownRatings(config AcoConfig) {
 	if config.RatingPreference == 0 {
 		for i := range ts.TownSlice {
-			(*ts).TownSlice[i].NormalizedRating = 1
+			(*ts).TownSlice[i].NormalizedRating = 0
 		}
 	} else {
 		maxRating := ts.TownSlice[0].Rating
@@ -132,13 +132,12 @@ func (ts *Towns) normalizeTownRatings(config AcoConfig) {
 		maxDistanceFactor := 1.0 / minDistance
 		if minRating == maxRating {
 			for i := range ts.TownSlice {
-				(*ts).TownSlice[i].NormalizedRating = 1
+				(*ts).TownSlice[i].NormalizedRating = 0
 			}
 		} else {
 			if config.MaximizeRating == true {
 				for i := range ts.TownSlice {
 					(*ts).TownSlice[i].NormalizedRating = config.RatingPreference * maxDistanceFactor * ((*ts).TownSlice[i].Rating - minRating) / (maxRating - minRating)
-					fmt.Println("NormalizedRating in town:", i, "equals", (*ts).TownSlice[i].NormalizedRating)
 				}
 			}
 		}
@@ -149,10 +148,7 @@ func (ts *Towns) calculateProbabilityMatrix(config AcoConfig) {
 	if config.Verbose {
 		noTrailProbabilityHistory := make([][]float64, len((*ts).TownSlice))
 		probabilityHistory := make([][]float64, len((*ts).TownSlice))
-		// for i := range (*ts).NoTrailProbabilityHistory {
-		// 	noTrailProbabilityHistory[i] = make([]float64, len((*ts).TownSlice))
-		// 	probabilityHistory[i] = make([]float64, len((*ts).TownSlice))
-		// }
+
 		(*ts).ProbabilityHistory = append((*ts).ProbabilityHistory, probabilityHistory)
 		(*ts).NoTrailProbabilityHistory = append((*ts).NoTrailProbabilityHistory, noTrailProbabilityHistory)
 

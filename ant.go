@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 )
 
 // Ant The representation of a single entity traversing a path throughout the towns
@@ -17,11 +16,12 @@ type Ant struct {
 	AverageRating    float64   `json:"averageRating"`
 }
 
-// ProgressOverTime tracks performance metrics of the ACO, such as AverageScore and MinimumScore for each Iteration
-type ProgressOverTime struct {
-	Iteration    []int     `json:"labels"`
-	AverageScore []float64 `json:"average"`
-	MinimumScore []float64 `json:"minimum"`
+// AverageResults tracks performance metrics of the ACO, such as AverageScore and MinimumScore for each Iteration
+type AverageResults struct {
+	Iteration int     `json:"labels"`
+	Score     float64 `json:"score"`
+	Distance  float64 `json:"distance"`
+	Rating    float64 `json:"rating"`
 }
 
 func createAnt(thisID int, townQty int) Ant {
@@ -42,25 +42,26 @@ func (a *Ant) getProbabilityList(ts Towns) {
 	denom := 0.0
 	numerator := make([]float64, n)
 
-	if ts.IncludesHome {
-		// Current location
+	if len((*a).Tour) == 0 {
+		for i := 0; i < n; i++ {
+			if !(*a).Visited[i] {
+				numerator[i] = ts.TownSlice[i].Rating
+				denom += numerator[i]
+			}
+		}
+	} else {
 		currentLocation := (*a).Tour[len((*a).Tour)-1]
-
 		for i := 0; i < n; i++ {
 			if !(*a).Visited[i] {
 				numerator[i] = ts.ProbabilityMatrix[currentLocation][i]
 				denom += numerator[i]
 			}
 		}
+	}
+
+	if ts.IncludesHome {
 		(*a).Probabilities[0] = 0
 	} else {
-		for i, t := range ts.TownSlice {
-			if !(*a).Visited[i] {
-				numerator[i] = t.Rating
-				denom += t.Rating
-			}
-
-		}
 		(*a).Probabilities[0] = numerator[0] / denom
 	}
 
@@ -107,7 +108,10 @@ func (a *Ant) visitNextTown(ts Towns) {
 		(*a).DistanceTraveled += distance
 		(*a).AverageRating = (((*a).AverageRating*(tourLength-1) + ts.TownSlice[i].Rating) / tourLength)
 	} else {
-		(*a).Score += 1 / normalizedRating
+		if normalizedRating > 0 {
+			(*a).Score += 1 / normalizedRating
+		}
+
 		(*a).AverageRating = ts.TownSlice[i].Rating
 	}
 
@@ -142,14 +146,24 @@ func createAntSlice(n int, ts Towns, config AcoConfig) []Ant {
 	return ants
 }
 
-func analyzeAnts(ants []Ant, bestAnts []Ant) ([]Ant, float64) {
+func analyzeAnts(ants []Ant, bestAnts []Ant, averageArray []AverageResults) ([]Ant, []AverageResults) {
 	scoreTotal := 0.0
+	distanceTotal := 0.0
+	ratingTotal := 0.0
 	bestAnt := ants[0]
 	for _, a := range ants {
 		scoreTotal += a.Score
+		distanceTotal += a.DistanceTraveled
+		ratingTotal += a.AverageRating
 		if a.Score < bestAnt.Score {
 			bestAnt = a
 		}
+	}
+	averageResults := AverageResults{
+		Iteration: len(averageArray),
+		Score:     scoreTotal / float64(len(ants)),
+		Distance:  distanceTotal / float64(len(ants)),
+		Rating:    ratingTotal / float64(len(ants)),
 	}
 
 	if len(bestAnts) == 0 || bestAnt.Score < bestAnts[len(bestAnts)-1].Score {
@@ -158,13 +172,9 @@ func analyzeAnts(ants []Ant, bestAnts []Ant) ([]Ant, float64) {
 		bestAnts = append(bestAnts, bestAnts[len(bestAnts)-1])
 	}
 
-	return bestAnts, scoreTotal / float64(len(ants))
-}
+	averageArray = append(averageArray, averageResults)
 
-func (p *ProgressOverTime) add(averageScore float64, minimumScore float64) {
-	(*p).Iteration = append((*p).Iteration, len((*p).Iteration))
-	(*p).AverageScore = append((*p).AverageScore, averageScore)
-	(*p).MinimumScore = append((*p).MinimumScore, minimumScore)
+	return bestAnts, averageArray
 }
 
 func (a *Ant) exportAnt() string {
@@ -175,28 +185,4 @@ func (a *Ant) exportAnt() string {
 		fmt.Println(err)
 	}
 	return string(antJSON[:])
-}
-
-func (p *ProgressOverTime) jsonify() []byte {
-	pJSON, err := json.Marshal(*p)
-
-	if err != nil {
-		fmt.Println(err)
-	}
-	return pJSON
-}
-
-func (p *ProgressOverTime) writeToFile(path string) {
-	pJSON := (*p).jsonify()
-
-	f, err := os.Create(path)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	n, err := f.Write(pJSON)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("Wrote:", n, "objects")
 }
