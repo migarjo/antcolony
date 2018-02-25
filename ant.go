@@ -106,13 +106,19 @@ func (a *Ant) visitNextTown(ts Towns) {
 		distance := ts.TownSlice[i].Distances[(*a).Tour[len((*a).Tour)-2]]
 		(*a).Score += 1 / (1/distance + normalizedRating)
 		(*a).DistanceTraveled += distance
-		(*a).AverageRating = (((*a).AverageRating*(tourLength-1) + ts.TownSlice[i].Rating) / tourLength)
+		if ts.IncludesHome {
+			(*a).AverageRating = ((*a).AverageRating*(tourLength-2) + ts.TownSlice[i].Rating) / (tourLength - 1)
+		} else {
+			(*a).AverageRating = (((*a).AverageRating*(tourLength-1) + ts.TownSlice[i].Rating) / tourLength)
+		}
 	} else {
 		if normalizedRating > 0 {
 			(*a).Score += 1 / normalizedRating
 		}
+		if !ts.IncludesHome {
+			(*a).AverageRating = ts.TownSlice[i].Rating
+		}
 
-		(*a).AverageRating = ts.TownSlice[i].Rating
 	}
 
 }
