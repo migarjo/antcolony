@@ -7,13 +7,13 @@ import (
 
 // Ant The representation of a single entity traversing a path throughout the towns
 type Ant struct {
-	ID               int       `json:"-"`
-	Tour             []int     `json:"tour"`
-	Visited          []bool    `json:"-"`
-	Probabilities    []float64 `json:"-"`
-	Score            float64   `json:"score"`
-	DistanceTraveled float64   `json:"distanceTraveled"`
-	AverageRating    float64   `json:"averageRating"`
+	ID            int       `json:"-"`
+	Tour          []int     `json:"tour"`
+	Visited       []bool    `json:"-"`
+	Probabilities []float64 `json:"-"`
+	Score         float64   `json:"score"`
+	Distance      float64   `json:"distance"`
+	Rating        float64   `json:"rating"`
 }
 
 // AverageResults tracks performance metrics of the ACO, such as AverageScore and MinimumScore for each Iteration
@@ -26,13 +26,13 @@ type AverageResults struct {
 
 func createAnt(thisID int, townQty int) Ant {
 	thisAnt := Ant{
-		ID:               thisID,
-		Tour:             []int{},
-		Visited:          make([]bool, townQty),
-		Probabilities:    make([]float64, townQty),
-		Score:            0,
-		DistanceTraveled: 0,
-		AverageRating:    0,
+		ID:            thisID,
+		Tour:          []int{},
+		Visited:       make([]bool, townQty),
+		Probabilities: make([]float64, townQty),
+		Score:         0,
+		Distance:      0,
+		Rating:        0,
 	}
 	return thisAnt
 }
@@ -87,7 +87,7 @@ func (a *Ant) returnHome(ts Towns) {
 		(*a).Tour = append((*a).Tour, ts.TownSlice[0].ID)
 		distance := ts.TownSlice[(*a).Tour[len((*a).Tour)-1]].Distances[(*a).Tour[len((*a).Tour)-2]]
 		(*a).Score += distance
-		(*a).DistanceTraveled += distance
+		(*a).Distance += distance
 	}
 }
 
@@ -105,18 +105,18 @@ func (a *Ant) visitNextTown(ts Towns) {
 	if tourLength > 1 {
 		distance := ts.TownSlice[i].Distances[(*a).Tour[len((*a).Tour)-2]]
 		(*a).Score += 1 / (1/distance + normalizedRating)
-		(*a).DistanceTraveled += distance
+		(*a).Distance += distance
 		if ts.IncludesHome {
-			(*a).AverageRating = ((*a).AverageRating*(tourLength-2) + ts.TownSlice[i].Rating) / (tourLength - 1)
+			(*a).Rating = ((*a).Rating*(tourLength-2) + ts.TownSlice[i].Rating) / (tourLength - 1)
 		} else {
-			(*a).AverageRating = (((*a).AverageRating*(tourLength-1) + ts.TownSlice[i].Rating) / tourLength)
+			(*a).Rating = (((*a).Rating*(tourLength-1) + ts.TownSlice[i].Rating) / tourLength)
 		}
 	} else {
 		if normalizedRating > 0 {
 			(*a).Score += 1 / normalizedRating
 		}
 		if !ts.IncludesHome {
-			(*a).AverageRating = ts.TownSlice[i].Rating
+			(*a).Rating = ts.TownSlice[i].Rating
 		}
 
 	}
@@ -159,8 +159,8 @@ func analyzeAnts(ants []Ant, bestAnts []Ant, averageArray []AverageResults) ([]A
 	bestAnt := ants[0]
 	for _, a := range ants {
 		scoreTotal += a.Score
-		distanceTotal += a.DistanceTraveled
-		ratingTotal += a.AverageRating
+		distanceTotal += a.Distance
+		ratingTotal += a.Rating
 		if a.Score < bestAnt.Score {
 			bestAnt = a
 		}
