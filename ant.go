@@ -118,9 +118,7 @@ func (a *Ant) visitNextTown(ts Towns) {
 		if !ts.IncludesHome {
 			(*a).Rating = ts.TownSlice[i].Rating
 		}
-
 	}
-
 }
 
 func (a *Ant) printAnt() {
@@ -138,17 +136,41 @@ func createAntSlice(n int, ts Towns, config AcoConfig) []Ant {
 
 	for a := 0; a < n; a++ {
 		myAnt := createAnt(a, len(ts.TownSlice))
+		requiredTownsVisited := make([]bool, len(ts.requiredTownsVisited))
+		copy(requiredTownsVisited, ts.requiredTownsVisited)
 
 		myAnt.visitHome(ts)
 
+		if ts.IncludesHome {
+			requiredTownsVisited[myAnt.Tour[len(myAnt.Tour)-1]] = true
+		}
+
 		for len(myAnt.Tour) < config.VisitQuantity {
 			myAnt.visitNextTown(ts)
+			requiredTownsVisited[myAnt.Tour[len(myAnt.Tour)-1]] = true
 		}
 
 		myAnt.returnHome(ts)
 
+		unvisitedRequiredTowns := []int{}
+		for i := range requiredTownsVisited {
+			if !myAnt.Visited[i] && ts.TownSlice[i].IsRequired {
+				unvisitedRequiredTowns = append(unvisitedRequiredTowns, i)
+			}
+			// if !visited {
+			// 	unvisitedRequiredTowns = append(unvisitedRequiredTowns, i)
+			// }
+		}
+
+		if len(unvisitedRequiredTowns) > 0 {
+			fmt.Println("Tour Before: ", myAnt.Tour)
+			myAnt.substituteRequiredTowns(ts, unvisitedRequiredTowns)
+			fmt.Println("Tour After: ", myAnt.Tour)
+		}
+
 		ants = append(ants, myAnt)
 	}
+
 	return ants
 }
 
@@ -181,6 +203,84 @@ func analyzeAnts(ants []Ant, bestAnts []Ant, averageArray []AverageResults) ([]A
 	averageArray = append(averageArray, averageResults)
 
 	return bestAnts, averageArray
+}
+
+func (a *Ant) substituteRequiredTowns(ts Towns, unvisitedRequiredTowns []int) {
+
+	for _, unvisitedTownID := range unvisitedRequiredTowns {
+		a.substituteTown(ts, unvisitedTownID)
+	}
+
+	(*a).Distance = 0.0
+	(*a).Score = 0.0
+	ratingSum := 0.0
+	for tourIndex, location := range (*a).Tour {
+		normalizedRating := ts.TownSlice[tourIndex].NormalizedRating
+		if tourIndex > 0 {
+			distance := ts.TownSlice[location].Distances[(*a).Tour[tourIndex-1]]
+			(*a).Score += 1 / (1/distance + normalizedRating)
+			(*a).Distance += distance
+			ratingSum += (*a).Rating
+		} else {
+			if normalizedRating > 0 {
+				(*a).Score += 1 / normalizedRating
+			}
+			if !ts.IncludesHome {
+				ratingSum += ts.TownSlice[location].Rating
+			}
+		}
+	}
+	if ts.IncludesHome {
+		(*a).Rating = ratingSum / float64(len((*a).Tour)-2)
+	} else {
+		(*a).Rating = ratingSum / float64(len((*a).Tour))
+	}
+
+}
+
+func (a *Ant) getReplaceProbabilityList(ts Towns, unvisitedTown int) {
+	numeratorArray := make([]float64, len(ts.TownSlice))
+	denom := 0.0
+
+	for j, visitedTown := range a.Tour {
+		if !ts.TownSlice[visitedTown].IsRequired {
+			if j == 0 {
+				numeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[unvisitedTown][2]
+			} else if j == len(a.Tour)-1 {
+				numeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[unvisitedTown][len(a.Tour)-2]
+			} else {
+				numeratorArray[visitedTown] = ts.ProbabilityMatrix[unvisitedTown][j-1] + ts.ProbabilityMatrix[unvisitedTown][j+1]
+			}
+			denom += numeratorArray[visitedTown]
+		}
+	}
+	fmt.Println("Numerators:", numeratorArray, "denom:", denom)
+	for i, numerator := range numeratorArray {
+		if i == 0 {
+			(*a).Probabilities[i] = numerator / denom
+		} else {
+			(*a).Probabilities[i] = (*a).Probabilities[i-1] + numerator/denom
+		}
+	}
+}
+
+func (a *Ant) substituteTown(ts Towns, unvisitedTownIndex int) {
+	(*a).getReplaceProbabilityList(ts, unvisitedTownIndex)
+	fmt.Println("Probability List: ", (*a).Probabilities)
+	randFloat := randSource.Float64()
+	replaceTownIndex := 0
+	for randFloat > (*a).Probabilities[replaceTownIndex] {
+		replaceTownIndex++
+	}
+	fmt.Println("Replace Index", replaceTownIndex, "Tour", (*a).Tour)
+	replaceLocation := 0
+	for replaceTownIndex != (*a).Tour[replaceLocation] {
+		replaceLocation++
+	}
+
+	(*a).Visited[replaceTownIndex] = false
+	(*a).Tour[replaceLocation] = unvisitedTownIndex
+	(*a).Visited[unvisitedTownIndex] = true
 }
 
 func (a *Ant) exportAnt() string {
