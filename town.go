@@ -38,7 +38,7 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 	if n == 1 {
 		return ApplicationError{"Only one town provided"}
 	}
-
+	requiredTownsQuantity := 0
 	for i, t := range (*ts).TownSlice {
 
 		if len(t.Distances) != len((*ts).TownSlice) {
@@ -62,6 +62,13 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 			}
 		}
 		(*ts).requiredTownsVisited = append((*ts).requiredTownsVisited, !ts.TownSlice[i].IsRequired)
+		if ts.TownSlice[i].IsRequired {
+			requiredTownsQuantity++
+		}
+	}
+
+	if requiredTownsQuantity > config.VisitQuantity {
+		return ApplicationError{"Number of required towns is greater than the number of towns to visit"}
 	}
 
 	if len((*ts).ProbabilityMatrix) == 0 {
