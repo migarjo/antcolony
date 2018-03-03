@@ -26,6 +26,7 @@ type Towns struct {
 	ProbabilityMatrix         [][]float64   `json:"-"`
 	ProbabilityHistory        [][][]float64 `json:"probabilityHistory,omitEmpty"`
 	NoTrailProbabilityHistory [][][]float64 `json:"noTrailProbabilityHistory,omitEmpty"`
+	requiredTownsVisited      []bool
 }
 
 func (ts *Towns) initializeTowns(config AcoConfig) error {
@@ -37,8 +38,9 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 	if n == 1 {
 		return ApplicationError{"Only one town provided"}
 	}
-
+	requiredTownsQuantity := 0
 	for i, t := range (*ts).TownSlice {
+
 		if len(t.Distances) != len((*ts).TownSlice) {
 			return ApplicationError{"Number of distances for town: " + strconv.Itoa(t.ID) + " is inconsistent with total number of towns"}
 		}
@@ -59,6 +61,14 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 				(*ts).TownSlice[i].TrailHistory = append((*ts).TownSlice[i].TrailHistory, (*ts).TownSlice[i].Trails)
 			}
 		}
+		(*ts).requiredTownsVisited = append((*ts).requiredTownsVisited, !ts.TownSlice[i].IsRequired)
+		if ts.TownSlice[i].IsRequired {
+			requiredTownsQuantity++
+		}
+	}
+
+	if requiredTownsQuantity > config.VisitQuantity {
+		return ApplicationError{"Number of required towns is greater than the number of towns to visit"}
 	}
 
 	if len((*ts).ProbabilityMatrix) == 0 {
@@ -113,15 +123,17 @@ func (ts *Towns) normalizeTownRatings(config AcoConfig) {
 			(*ts).TownSlice[i].NormalizedRating = 0
 		}
 	} else {
-		maxRating := ts.TownSlice[0].Rating
-		minRating := ts.TownSlice[0].Rating
+		maxRating := ts.TownSlice[1].Rating
+		minRating := ts.TownSlice[1].Rating
 		minDistance := ts.TownSlice[0].Distances[1]
 		for i := range ts.TownSlice {
-			if ts.TownSlice[i].Rating > maxRating {
-				maxRating = ts.TownSlice[i].Rating
-			}
-			if ts.TownSlice[i].Rating < maxRating {
-				minRating = ts.TownSlice[i].Rating
+			if (*ts).IncludesHome || i > 0 {
+				if ts.TownSlice[i].Rating > maxRating {
+					maxRating = ts.TownSlice[i].Rating
+				}
+				if ts.TownSlice[i].Rating < maxRating {
+					minRating = ts.TownSlice[i].Rating
+				}
 			}
 			for j := range ts.TownSlice[i].Distances {
 				if ts.TownSlice[i].Distances[j] > 0 && ts.TownSlice[i].Distances[j] < minDistance {
@@ -140,6 +152,10 @@ func (ts *Towns) normalizeTownRatings(config AcoConfig) {
 					(*ts).TownSlice[i].NormalizedRating = config.RatingPreference * maxDistanceFactor * ((*ts).TownSlice[i].Rating - minRating) / (maxRating - minRating)
 				}
 			}
+		}
+		if (*ts).IncludesHome {
+			(*ts).TownSlice[0].Rating = 0
+			(*ts).TownSlice[0].NormalizedRating = 0
 		}
 	}
 }

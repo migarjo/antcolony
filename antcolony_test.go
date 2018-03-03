@@ -28,6 +28,18 @@ func TestImportInputs(t *testing.T) {
 		t.Error("Expected 4 towns, got ", len(towns.TownSlice))
 	}
 
+	if !towns.TownSlice[0].IsRequired {
+		t.Error("Expected Town 0 to have IsRequired be true because IncludesHome = true, got ", towns.TownSlice[0].IsRequired)
+	}
+
+	if towns.TownSlice[1].IsRequired {
+		t.Error("Expected Town 1 to have IsRequired be false, got ", towns.TownSlice[1].IsRequired)
+	}
+
+	if !towns.TownSlice[3].IsRequired {
+		t.Error("Expected Town 3 to have IsRequired be true, got ", towns.TownSlice[3].IsRequired)
+	}
+
 	if err != nil {
 		t.Error("Received error marshalling input: ", err)
 	}
