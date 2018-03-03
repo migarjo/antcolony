@@ -230,9 +230,6 @@ func (a *Ant) getReplaceProbabilityList(ts Towns, unvisitedTown int) {
 	replacementNumeratorArray := make([]float64, len(ts.TownSlice))
 	numeratorDiffArray := make([]float64, len(ts.TownSlice))
 	minimumNumeratorDiff := 0.0
-	shiftedNumeratorDiff := make([]float64, len(ts.TownSlice))
-	//replacementDenom := 0.0
-	//originalDenom := 0.0
 	diffDenom := 0.0
 
 	for j, visitedTown := range a.Tour {
@@ -264,27 +261,21 @@ func (a *Ant) getReplaceProbabilityList(ts Towns, unvisitedTown int) {
 
 	for i := range replacementNumeratorArray {
 		if i == 0 {
-			//(*a).Probabilities[i] = numerator / replacementDenom
-			shiftedNumeratorDiff[i] = numeratorDiffArray[i] / diffDenom
 			(*a).Probabilities[i] = numeratorDiffArray[i] / diffDenom
 		} else {
-			//(*a).Probabilities[i] = (*a).Probabilities[i-1] + numerator/replacementDenom
-			shiftedNumeratorDiff[i] = shiftedNumeratorDiff[i-1] + numeratorDiffArray[i]/diffDenom
 			(*a).Probabilities[i] = (*a).Probabilities[i-1] + numeratorDiffArray[i]/diffDenom
 		}
 	}
-	fmt.Println("shiftedNumeratorDiff:", shiftedNumeratorDiff)
 }
 
 func (a *Ant) substituteTown(ts Towns, unvisitedTownIndex int) {
 	(*a).getReplaceProbabilityList(ts, unvisitedTownIndex)
-	fmt.Println("Probability List: ", (*a).Probabilities)
 	randFloat := randSource.Float64()
 	replaceTownIndex := 0
 	for randFloat > (*a).Probabilities[replaceTownIndex] {
 		replaceTownIndex++
 	}
-	fmt.Println("Replace Index", replaceTownIndex, "Tour", (*a).Tour)
+
 	replaceLocation := 0
 	for replaceTownIndex != (*a).Tour[replaceLocation] {
 		replaceLocation++
