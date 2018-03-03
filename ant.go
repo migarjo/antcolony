@@ -99,26 +99,7 @@ func (a *Ant) visitNextTown(ts Towns) {
 		i++
 	}
 	(*a).Tour = append((*a).Tour, i)
-	tourLength := float64(len((*a).Tour))
 	(*a).Visited[i] = true
-	normalizedRating := ts.TownSlice[i].NormalizedRating
-	if tourLength > 1 {
-		distance := ts.TownSlice[i].Distances[(*a).Tour[len((*a).Tour)-2]]
-		(*a).Score += 1 / (1/distance + normalizedRating)
-		(*a).Distance += distance
-		if ts.IncludesHome {
-			(*a).Rating = ((*a).Rating*(tourLength-2) + ts.TownSlice[i].Rating) / (tourLength - 1)
-		} else {
-			(*a).Rating = (((*a).Rating*(tourLength-1) + ts.TownSlice[i].Rating) / tourLength)
-		}
-	} else {
-		if normalizedRating > 0 {
-			(*a).Score += 1 / normalizedRating
-		}
-		if !ts.IncludesHome {
-			(*a).Rating = ts.TownSlice[i].Rating
-		}
-	}
 }
 
 func (a *Ant) printAnt() {
@@ -151,15 +132,13 @@ func createAntSlice(n int, ts Towns, config AcoConfig) []Ant {
 		}
 
 		myAnt.returnHome(ts)
+		myAnt.Score, myAnt.Distance, myAnt.Rating = calculateAntResults(myAnt.Tour, ts)
 
 		unvisitedRequiredTowns := []int{}
 		for i := range requiredTownsVisited {
 			if !myAnt.Visited[i] && ts.TownSlice[i].IsRequired {
 				unvisitedRequiredTowns = append(unvisitedRequiredTowns, i)
 			}
-			// if !visited {
-			// 	unvisitedRequiredTowns = append(unvisitedRequiredTowns, i)
-			// }
 		}
 
 		if len(unvisitedRequiredTowns) > 0 {
@@ -207,23 +186,31 @@ func analyzeAnts(ants []Ant, bestAnts []Ant, averageArray []AverageResults) ([]A
 
 func (a *Ant) substituteRequiredTowns(ts Towns, unvisitedRequiredTowns []int) {
 
+	randSource.Shuffle(len(unvisitedRequiredTowns), func(i, j int) {
+		unvisitedRequiredTowns[i], unvisitedRequiredTowns[j] = unvisitedRequiredTowns[j], unvisitedRequiredTowns[i]
+	})
+
 	for _, unvisitedTownID := range unvisitedRequiredTowns {
 		a.substituteTown(ts, unvisitedTownID)
 	}
+	a.Score, a.Distance, a.Rating = calculateAntResults((*a).Tour, ts)
+}
 
-	(*a).Distance = 0.0
-	(*a).Score = 0.0
+func calculateAntResults(tour []int, ts Towns) (float64, float64, float64) {
+	distance := 0.0
+	score := 0.0
+	rating := 0.0
 	ratingSum := 0.0
-	for tourIndex, location := range (*a).Tour {
-		normalizedRating := ts.TownSlice[tourIndex].NormalizedRating
+	for tourIndex, location := range tour {
+		normalizedRating := ts.TownSlice[location].NormalizedRating
 		if tourIndex > 0 {
-			distance := ts.TownSlice[location].Distances[(*a).Tour[tourIndex-1]]
-			(*a).Score += 1 / (1/distance + normalizedRating)
-			(*a).Distance += distance
-			ratingSum += (*a).Rating
+			legDistance := ts.TownSlice[location].Distances[tour[tourIndex-1]]
+			score += 1 / (1/legDistance + normalizedRating)
+			distance += legDistance
+			ratingSum += ts.TownSlice[location].Rating
 		} else {
 			if normalizedRating > 0 {
-				(*a).Score += 1 / normalizedRating
+				score += 1 / normalizedRating
 			}
 			if !ts.IncludesHome {
 				ratingSum += ts.TownSlice[location].Rating
@@ -231,37 +218,62 @@ func (a *Ant) substituteRequiredTowns(ts Towns, unvisitedRequiredTowns []int) {
 		}
 	}
 	if ts.IncludesHome {
-		(*a).Rating = ratingSum / float64(len((*a).Tour)-2)
+		rating = ratingSum / float64(len(tour)-2)
 	} else {
-		(*a).Rating = ratingSum / float64(len((*a).Tour))
+		rating = ratingSum / float64(len(tour))
 	}
-
+	return score, distance, rating
 }
 
 func (a *Ant) getReplaceProbabilityList(ts Towns, unvisitedTown int) {
-	numeratorArray := make([]float64, len(ts.TownSlice))
-	denom := 0.0
+	originalNumeratorArray := make([]float64, len(ts.TownSlice))
+	replacementNumeratorArray := make([]float64, len(ts.TownSlice))
+	numeratorDiffArray := make([]float64, len(ts.TownSlice))
+	minimumNumeratorDiff := 0.0
+	shiftedNumeratorDiff := make([]float64, len(ts.TownSlice))
+	//replacementDenom := 0.0
+	//originalDenom := 0.0
+	diffDenom := 0.0
 
 	for j, visitedTown := range a.Tour {
 		if !ts.TownSlice[visitedTown].IsRequired {
 			if j == 0 {
-				numeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[unvisitedTown][2]
+				originalNumeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[visitedTown][a.Tour[1]]
+				replacementNumeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[unvisitedTown][a.Tour[1]]
 			} else if j == len(a.Tour)-1 {
-				numeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[unvisitedTown][len(a.Tour)-2]
+				originalNumeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[visitedTown][a.Tour[len(a.Tour)-2]]
+				replacementNumeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[unvisitedTown][a.Tour[len(a.Tour)-2]]
 			} else {
-				numeratorArray[visitedTown] = ts.ProbabilityMatrix[unvisitedTown][j-1] + ts.ProbabilityMatrix[unvisitedTown][j+1]
+				originalNumeratorArray[visitedTown] = ts.ProbabilityMatrix[visitedTown][a.Tour[j-1]] + ts.ProbabilityMatrix[visitedTown][a.Tour[j+1]]
+				replacementNumeratorArray[visitedTown] = ts.ProbabilityMatrix[unvisitedTown][a.Tour[j-1]] + ts.ProbabilityMatrix[unvisitedTown][a.Tour[j+1]]
 			}
-			denom += numeratorArray[visitedTown]
+			numeratorDiffArray[visitedTown] = replacementNumeratorArray[visitedTown] - originalNumeratorArray[visitedTown]
+			if j == 0 || numeratorDiffArray[visitedTown] < minimumNumeratorDiff {
+				minimumNumeratorDiff = numeratorDiffArray[visitedTown]
+			}
 		}
 	}
-	fmt.Println("Numerators:", numeratorArray, "denom:", denom)
-	for i, numerator := range numeratorArray {
+
+	fmt.Println("Diff array", numeratorDiffArray)
+	for i := range numeratorDiffArray {
+		if !ts.TownSlice[i].IsRequired && a.Visited[i] {
+			numeratorDiffArray[i] -= minimumNumeratorDiff
+			diffDenom += numeratorDiffArray[i]
+		}
+	}
+
+	for i := range replacementNumeratorArray {
 		if i == 0 {
-			(*a).Probabilities[i] = numerator / denom
+			//(*a).Probabilities[i] = numerator / replacementDenom
+			shiftedNumeratorDiff[i] = numeratorDiffArray[i] / diffDenom
+			(*a).Probabilities[i] = numeratorDiffArray[i] / diffDenom
 		} else {
-			(*a).Probabilities[i] = (*a).Probabilities[i-1] + numerator/denom
+			//(*a).Probabilities[i] = (*a).Probabilities[i-1] + numerator/replacementDenom
+			shiftedNumeratorDiff[i] = shiftedNumeratorDiff[i-1] + numeratorDiffArray[i]/diffDenom
+			(*a).Probabilities[i] = (*a).Probabilities[i-1] + numeratorDiffArray[i]/diffDenom
 		}
 	}
+	fmt.Println("shiftedNumeratorDiff:", shiftedNumeratorDiff)
 }
 
 func (a *Ant) substituteTown(ts Towns, unvisitedTownIndex int) {
