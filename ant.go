@@ -142,9 +142,7 @@ func createAntSlice(n int, ts Towns, config AcoConfig) []Ant {
 		}
 
 		if len(unvisitedRequiredTowns) > 0 {
-			fmt.Println("Tour Before: ", myAnt.Tour)
 			myAnt.substituteRequiredTowns(ts, unvisitedRequiredTowns)
-			fmt.Println("Tour After: ", myAnt.Tour)
 		}
 
 		ants = append(ants, myAnt)
