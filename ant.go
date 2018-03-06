@@ -233,14 +233,14 @@ func (a *Ant) getReplaceProbabilityList(ts Towns, unvisitedTown int) {
 	for j, visitedTown := range a.Tour {
 		if !ts.TownSlice[visitedTown].IsRequired {
 			if j == 0 {
-				originalNumeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[visitedTown][a.Tour[1]]
-				replacementNumeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[unvisitedTown][a.Tour[1]]
+				originalNumeratorArray[visitedTown] = 2 * ts.probabilityMatrix[visitedTown][a.Tour[1]]
+				replacementNumeratorArray[visitedTown] = 2 * ts.probabilityMatrix[unvisitedTown][a.Tour[1]]
 			} else if j == len(a.Tour)-1 {
-				originalNumeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[visitedTown][a.Tour[len(a.Tour)-2]]
-				replacementNumeratorArray[visitedTown] = 2 * ts.ProbabilityMatrix[unvisitedTown][a.Tour[len(a.Tour)-2]]
+				originalNumeratorArray[visitedTown] = 2 * ts.probabilityMatrix[visitedTown][a.Tour[len(a.Tour)-2]]
+				replacementNumeratorArray[visitedTown] = 2 * ts.probabilityMatrix[unvisitedTown][a.Tour[len(a.Tour)-2]]
 			} else {
-				originalNumeratorArray[visitedTown] = ts.ProbabilityMatrix[visitedTown][a.Tour[j-1]] + ts.ProbabilityMatrix[visitedTown][a.Tour[j+1]]
-				replacementNumeratorArray[visitedTown] = ts.ProbabilityMatrix[unvisitedTown][a.Tour[j-1]] + ts.ProbabilityMatrix[unvisitedTown][a.Tour[j+1]]
+				originalNumeratorArray[visitedTown] = ts.probabilityMatrix[visitedTown][a.Tour[j-1]] + ts.probabilityMatrix[visitedTown][a.Tour[j+1]]
+				replacementNumeratorArray[visitedTown] = ts.probabilityMatrix[unvisitedTown][a.Tour[j-1]] + ts.probabilityMatrix[unvisitedTown][a.Tour[j+1]]
 			}
 			numeratorDiffArray[visitedTown] = replacementNumeratorArray[visitedTown] - originalNumeratorArray[visitedTown]
 			if j == 0 || numeratorDiffArray[visitedTown] < minimumNumeratorDiff {

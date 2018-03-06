@@ -23,10 +23,10 @@ type Town struct {
 type Towns struct {
 	IncludesHome              bool          `json:"includesHome"`
 	TownSlice                 []Town        `json:"towns"`
-	ProbabilityMatrix         [][]float64   `json:"-"`
 	ProbabilityHistory        [][][]float64 `json:"probabilityHistory,omitEmpty"`
 	NoTrailProbabilityHistory [][][]float64 `json:"noTrailProbabilityHistory,omitEmpty"`
 	requiredTownsVisited      []bool
+	probabilityMatrix         [][]float64
 }
 
 func (ts *Towns) initializeTowns(config AcoConfig) error {
@@ -71,10 +71,10 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 		return ApplicationError{"Number of required towns is greater than the number of towns to visit"}
 	}
 
-	if len((*ts).ProbabilityMatrix) == 0 {
-		(*ts).ProbabilityMatrix = make([][]float64, n)
-		for i := range (*ts).ProbabilityMatrix {
-			(*ts).ProbabilityMatrix[i] = make([]float64, n)
+	if len((*ts).probabilityMatrix) == 0 {
+		(*ts).probabilityMatrix = make([][]float64, n)
+		for i := range (*ts).probabilityMatrix {
+			(*ts).probabilityMatrix[i] = make([]float64, n)
 		}
 	}
 
@@ -90,9 +90,9 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 }
 
 func (ts *Towns) clearProbabilityMatrix() {
-	for i := range (*ts).ProbabilityMatrix {
-		for j := range (*ts).ProbabilityMatrix[i] {
-			(*ts).ProbabilityMatrix[i][j] = 0
+	for i := range (*ts).probabilityMatrix {
+		for j := range (*ts).probabilityMatrix[i] {
+			(*ts).probabilityMatrix[i][j] = 0
 		}
 	}
 }
@@ -174,9 +174,9 @@ func (ts *Towns) calculateProbabilityMatrix(config AcoConfig) {
 		for j := range (*ts).TownSlice[i].Trails {
 			probability := math.Pow(t.Trails[j], config.TrailPreference) * math.Pow((1.0/t.Distances[j]+t.NormalizedRating), config.DistancePreference)
 			if math.IsInf(probability, 0) {
-				(*ts).ProbabilityMatrix[i][j] = 0
+				(*ts).probabilityMatrix[i][j] = 0
 			} else {
-				(*ts).ProbabilityMatrix[i][j] = probability
+				(*ts).probabilityMatrix[i][j] = probability
 			}
 			if config.Verbose {
 				noTrailProbability := math.Pow((1.0/t.Distances[j] + t.NormalizedRating), config.DistancePreference)
