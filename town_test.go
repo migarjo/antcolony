@@ -68,10 +68,10 @@ func TestProbabilityMatrix(t *testing.T) {
 
 	expectedProbabilityMatrix := [][]float64{[]float64{0, 1, 0.5}, []float64{1.5, 0, 1.5}, []float64{1.5, 2, 0}}
 
-	for i := range towns.ProbabilityMatrix {
-		for j := range towns.ProbabilityMatrix[i] {
-			if towns.ProbabilityMatrix[i][j] != expectedProbabilityMatrix[i][j] {
-				t.Error("ProbabilityMatrix for i:", i, "j:", j, "equals", towns.ProbabilityMatrix[i][j], "but expected", expectedProbabilityMatrix[i][j])
+	for i := range towns.probabilityMatrix {
+		for j := range towns.probabilityMatrix[i] {
+			if towns.probabilityMatrix[i][j] != expectedProbabilityMatrix[i][j] {
+				t.Error("ProbabilityMatrix for i:", i, "j:", j, "equals", towns.probabilityMatrix[i][j], "but expected", expectedProbabilityMatrix[i][j])
 			}
 		}
 

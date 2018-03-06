@@ -53,7 +53,7 @@ func (a *Ant) getProbabilityList(ts Towns) {
 		currentLocation := (*a).Tour[len((*a).Tour)-1]
 		for i := 0; i < n; i++ {
 			if !(*a).Visited[i] {
-				numerator[i] = ts.ProbabilityMatrix[currentLocation][i]
+				numerator[i] = ts.probabilityMatrix[currentLocation][i]
 				denom += numerator[i]
 			}
 		}
