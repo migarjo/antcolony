@@ -20,8 +20,13 @@ func initializeGlobals() {
 	randSource = rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
+func getStatusMessage() string {
+	return "Our ants are ready to swarm!"
+}
+
 func status(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintln(w, "Hello Wicker Park, Our ants are ready to swarm!")
+	statusMessage := getStatusMessage()
+	fmt.Fprintln(w, statusMessage)
 }
 
 func solvetsp(w http.ResponseWriter, req *http.Request) {
