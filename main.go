@@ -21,7 +21,7 @@ func initializeGlobals() {
 }
 
 func status(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintln(w, "Our ants are ready to swarm!")
+	fmt.Fprintln(w, "Hello Wicker Park, Our ants are ready to swarm!")
 }
 
 func solvetsp(w http.ResponseWriter, req *http.Request) {
