@@ -54,6 +54,7 @@
 			},
 			{
 				"id": 3,
+				"isRequired": true,
 				"distances": [
 					9.055385138137417,
 					8,

@@ -23,9 +23,10 @@ type Town struct {
 type Towns struct {
 	IncludesHome              bool          `json:"includesHome"`
 	TownSlice                 []Town        `json:"towns"`
-	ProbabilityMatrix         [][]float64   `json:"-"`
 	ProbabilityHistory        [][][]float64 `json:"probabilityHistory,omitEmpty"`
 	NoTrailProbabilityHistory [][][]float64 `json:"noTrailProbabilityHistory,omitEmpty"`
+	requiredTownsVisited      []bool
+	probabilityMatrix         [][]float64
 }
 
 func (ts *Towns) initializeTowns(config AcoConfig) error {
@@ -37,8 +38,9 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 	if n == 1 {
 		return ApplicationError{"Only one town provided"}
 	}
-
+	requiredTownsQuantity := 0
 	for i, t := range (*ts).TownSlice {
+
 		if len(t.Distances) != len((*ts).TownSlice) {
 			return ApplicationError{"Number of distances for town: " + strconv.Itoa(t.ID) + " is inconsistent with total number of towns"}
 		}
@@ -59,12 +61,20 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 				(*ts).TownSlice[i].TrailHistory = append((*ts).TownSlice[i].TrailHistory, (*ts).TownSlice[i].Trails)
 			}
 		}
+		(*ts).requiredTownsVisited = append((*ts).requiredTownsVisited, !ts.TownSlice[i].IsRequired)
+		if ts.TownSlice[i].IsRequired {
+			requiredTownsQuantity++
+		}
 	}
 
-	if len((*ts).ProbabilityMatrix) == 0 {
-		(*ts).ProbabilityMatrix = make([][]float64, n)
-		for i := range (*ts).ProbabilityMatrix {
-			(*ts).ProbabilityMatrix[i] = make([]float64, n)
+	if requiredTownsQuantity > config.VisitQuantity {
+		return ApplicationError{"Number of required towns is greater than the number of towns to visit"}
+	}
+
+	if len((*ts).probabilityMatrix) == 0 {
+		(*ts).probabilityMatrix = make([][]float64, n)
+		for i := range (*ts).probabilityMatrix {
+			(*ts).probabilityMatrix[i] = make([]float64, n)
 		}
 	}
 
@@ -80,9 +90,9 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 }
 
 func (ts *Towns) clearProbabilityMatrix() {
-	for i := range (*ts).ProbabilityMatrix {
-		for j := range (*ts).ProbabilityMatrix[i] {
-			(*ts).ProbabilityMatrix[i][j] = 0
+	for i := range (*ts).probabilityMatrix {
+		for j := range (*ts).probabilityMatrix[i] {
+			(*ts).probabilityMatrix[i][j] = 0
 		}
 	}
 }
@@ -113,15 +123,17 @@ func (ts *Towns) normalizeTownRatings(config AcoConfig) {
 			(*ts).TownSlice[i].NormalizedRating = 0
 		}
 	} else {
-		maxRating := ts.TownSlice[0].Rating
-		minRating := ts.TownSlice[0].Rating
+		maxRating := ts.TownSlice[1].Rating
+		minRating := ts.TownSlice[1].Rating
 		minDistance := ts.TownSlice[0].Distances[1]
 		for i := range ts.TownSlice {
-			if ts.TownSlice[i].Rating > maxRating {
-				maxRating = ts.TownSlice[i].Rating
-			}
-			if ts.TownSlice[i].Rating < maxRating {
-				minRating = ts.TownSlice[i].Rating
+			if (*ts).IncludesHome || i > 0 {
+				if ts.TownSlice[i].Rating > maxRating {
+					maxRating = ts.TownSlice[i].Rating
+				}
+				if ts.TownSlice[i].Rating < maxRating {
+					minRating = ts.TownSlice[i].Rating
+				}
 			}
 			for j := range ts.TownSlice[i].Distances {
 				if ts.TownSlice[i].Distances[j] > 0 && ts.TownSlice[i].Distances[j] < minDistance {
@@ -141,6 +153,10 @@ func (ts *Towns) normalizeTownRatings(config AcoConfig) {
 				}
 			}
 		}
+		if (*ts).IncludesHome {
+			(*ts).TownSlice[0].Rating = 0
+			(*ts).TownSlice[0].NormalizedRating = 0
+		}
 	}
 }
 
@@ -158,9 +174,9 @@ func (ts *Towns) calculateProbabilityMatrix(config AcoConfig) {
 		for j := range (*ts).TownSlice[i].Trails {
 			probability := math.Pow(t.Trails[j], config.TrailPreference) * math.Pow((1.0/t.Distances[j]+t.NormalizedRating), config.DistancePreference)
 			if math.IsInf(probability, 0) {
-				(*ts).ProbabilityMatrix[i][j] = 0
+				(*ts).probabilityMatrix[i][j] = 0
 			} else {
-				(*ts).ProbabilityMatrix[i][j] = probability
+				(*ts).probabilityMatrix[i][j] = probability
 			}
 			if config.Verbose {
 				noTrailProbability := math.Pow((1.0/t.Distances[j] + t.NormalizedRating), config.DistancePreference)
