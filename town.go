@@ -10,22 +10,31 @@ import (
 
 // Town is the Node struct for each destination in the TSP
 type Town struct {
-	ID               int         `json:"id,omitEmpty"`
-	Distances        []float64   `json:"distances,omitEmpty"`
-	Trails           []float64   `json:"trails,omitEmpty"`
-	Rating           float64     `json:"rating,omitEmpty"`
-	IsRequired       bool        `json:"isRequired"`
-	NormalizedRating float64     `json:"-"`
-	TrailHistory     [][]float64 `json:"trailHistory,omitEmpty"`
+	ID                 int       `json:"id,omitEmpty"`
+	Distances          []float64 `json:"distances,omitEmpty"`
+	Trails             []float64 `json:"trails,omitEmpty"`
+	Rating             float64   `json:"rating,omitEmpty"`
+	Cost               float64   `json:"cost,omitEmpty"`
+	AvailabilityBounds `json:"availabilityBounds,omitEmpty"`
+	IsRequired         bool        `json:"isRequired"`
+	NormalizedRating   float64     `json:"-"`
+	TrailHistory       [][]float64 `json:"trailHistory,omitEmpty"`
 }
 
 // Towns is the collection of nodes for the TSP, with a matrix of the probability of traversing between each town
 type Towns struct {
-	IncludesHome              bool          `json:"includesHome"`
-	TownSlice                 []Town        `json:"towns"`
-	ProbabilityMatrix         [][]float64   `json:"-"`
+	IncludesHome              bool `json:"includesHome"`
+	AvailabilityBounds        `json:"availabilityBounds,omitEmpty"`
+	TownSlice                 []Town `json:"towns"`
+	probabilityMatrix         [][]float64
 	ProbabilityHistory        [][][]float64 `json:"probabilityHistory,omitEmpty"`
 	NoTrailProbabilityHistory [][][]float64 `json:"noTrailProbabilityHistory,omitEmpty"`
+}
+
+// AvailabilityBounds allows a user to set time limits on availability for a town or limits to the total time of activity.
+type AvailabilityBounds struct {
+	Start float64 `json:"start,omitEmpty"`
+	End   float64 `json:"end,omitEmpty"`
 }
 
 func (ts *Towns) initializeTowns(config AcoConfig) error {
@@ -61,10 +70,10 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 		}
 	}
 
-	if len((*ts).ProbabilityMatrix) == 0 {
-		(*ts).ProbabilityMatrix = make([][]float64, n)
-		for i := range (*ts).ProbabilityMatrix {
-			(*ts).ProbabilityMatrix[i] = make([]float64, n)
+	if len((*ts).probabilityMatrix) == 0 {
+		(*ts).probabilityMatrix = make([][]float64, n)
+		for i := range (*ts).probabilityMatrix {
+			(*ts).probabilityMatrix[i] = make([]float64, n)
 		}
 	}
 
@@ -74,15 +83,19 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 
 	}
 
+	if ((*ts).AvailabilityBounds.Start != 0.0 && (*ts).AvailabilityBounds.End == 0.0) || (*ts).AvailabilityBounds.Start == 0.0 && (*ts).AvailabilityBounds.End != 0.0 {
+		return ApplicationError{"Availability bounds for the trip are inconsistent. One is null or zero while the other is non-zero"}
+	}
+
 	(*ts).normalizeTownRatings(config)
 
 	return nil
 }
 
 func (ts *Towns) clearProbabilityMatrix() {
-	for i := range (*ts).ProbabilityMatrix {
-		for j := range (*ts).ProbabilityMatrix[i] {
-			(*ts).ProbabilityMatrix[i][j] = 0
+	for i := range (*ts).probabilityMatrix {
+		for j := range (*ts).probabilityMatrix[i] {
+			(*ts).probabilityMatrix[i][j] = 0
 		}
 	}
 }
@@ -158,9 +171,9 @@ func (ts *Towns) calculateProbabilityMatrix(config AcoConfig) {
 		for j := range (*ts).TownSlice[i].Trails {
 			probability := math.Pow(t.Trails[j], config.TrailPreference) * math.Pow((1.0/t.Distances[j]+t.NormalizedRating), config.DistancePreference)
 			if math.IsInf(probability, 0) {
-				(*ts).ProbabilityMatrix[i][j] = 0
+				(*ts).probabilityMatrix[i][j] = 0
 			} else {
-				(*ts).ProbabilityMatrix[i][j] = probability
+				(*ts).probabilityMatrix[i][j] = probability
 			}
 			if config.Verbose {
 				noTrailProbability := math.Pow((1.0/t.Distances[j] + t.NormalizedRating), config.DistancePreference)
