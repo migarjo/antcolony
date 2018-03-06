@@ -56,6 +56,7 @@ func solvetsp(w http.ResponseWriter, req *http.Request) {
 func main() {
 	initializeGlobals()
 
+	http.HandleFunc("/", status)
 	http.HandleFunc("/status", status)
 	http.HandleFunc("/api/solvetsp", solvetsp)
 	var port string
