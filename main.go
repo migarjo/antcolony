@@ -21,7 +21,7 @@ func initializeGlobals() {
 }
 
 func getStatusMessage() string {
-	return "Our ants are ready to swarm!"
+	return "Hello Dow, our ants are ready to swarm!"
 }
 
 func status(w http.ResponseWriter, req *http.Request) {
