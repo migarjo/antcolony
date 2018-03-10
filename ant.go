@@ -3,17 +3,22 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 )
 
 // Ant The representation of a single entity traversing a path throughout the towns
 type Ant struct {
-	ID            int       `json:"-"`
-	Tour          []int     `json:"tour"`
-	Visited       []bool    `json:"-"`
-	Probabilities []float64 `json:"-"`
-	Score         float64   `json:"score"`
-	Distance      float64   `json:"distance"`
-	Rating        float64   `json:"rating"`
+	ID                 int         `json:"-"`
+	Tour               []int       `json:"tour"`
+	Visited            []bool      `json:"-"`
+	Probabilities      []float64   `json:"-"`
+	Score              float64     `json:"score"`
+	Distance           float64     `json:"distance"`
+	Rating             float64     `json:"rating"`
+	VisitSpan          [][]float64 `json:"visitSpan"`
+	costState          float64
+	availabilityBounds AvailabilityBounds
+	tourComplete       bool
 }
 
 // AverageResults tracks performance metrics of the ACO, such as AverageScore and MinimumScore for each Iteration
@@ -33,6 +38,7 @@ func createAnt(thisID int, townQty int) Ant {
 		Score:         0,
 		Distance:      0,
 		Rating:        0,
+		VisitSpan:     [][]float64{},
 	}
 	return thisAnt
 }
@@ -44,15 +50,23 @@ func (a *Ant) getProbabilityList(ts Towns) {
 
 	if len((*a).Tour) == 0 {
 		for i := 0; i < n; i++ {
-			if !(*a).Visited[i] {
+			if !(*a).Visited[i] && isAvailable(ts, a, i) {
 				numerator[i] = ts.TownSlice[i].Rating
 				denom += numerator[i]
+			}
+		}
+		if denom == 0 {
+			for i := 0; i < n; i++ {
+				if !(*a).Visited[i] && isAvailable(ts, a, i) {
+					numerator[i] = 1
+					denom++
+				}
 			}
 		}
 	} else {
 		currentLocation := (*a).Tour[len((*a).Tour)-1]
 		for i := 0; i < n; i++ {
-			if !(*a).Visited[i] {
+			if !(*a).Visited[i] && isAvailable(ts, a, i) {
 				numerator[i] = ts.probabilityMatrix[currentLocation][i]
 				denom += numerator[i]
 			}
@@ -79,6 +93,8 @@ func (a *Ant) visitHome(ts Towns) {
 	if ts.IncludesHome {
 		(*a).Tour = append((*a).Tour, ts.TownSlice[0].ID)
 		(*a).Visited[ts.TownSlice[0].ID] = true
+		(*a).VisitSpan = append((*a).VisitSpan, []float64{ts.AvailabilityBounds.Start, ts.AvailabilityBounds.Start + ts.TownSlice[0].VisitDuration})
+		(*a).costState += ts.TownSlice[0].VisitDuration
 	}
 }
 
@@ -88,11 +104,14 @@ func (a *Ant) returnHome(ts Towns) {
 		distance := ts.TownSlice[(*a).Tour[len((*a).Tour)-1]].Distances[(*a).Tour[len((*a).Tour)-2]]
 		(*a).Score += distance
 		(*a).Distance += distance
+		thisVisitSpan := make([]float64, 2)
+		thisVisitSpan[0] = (*a).VisitSpan[len((*a).VisitSpan)-1][1] + distance
+		thisVisitSpan[1] = thisVisitSpan[0] + ts.TownSlice[0].VisitDuration
+		(*a).VisitSpan = append((*a).VisitSpan, thisVisitSpan)
 	}
 }
 
 func (a *Ant) visitNextTown(ts Towns) {
-	(*a).getProbabilityList(ts)
 	randFloat := randSource.Float64()
 	i := 0
 	for randFloat > (*a).Probabilities[i] {
@@ -103,7 +122,7 @@ func (a *Ant) visitNextTown(ts Towns) {
 	(*a).Visited[i] = true
 	normalizedRating := ts.TownSlice[i].NormalizedRating
 	if tourLength > 1 {
-		distance := ts.TownSlice[i].Distances[(*a).Tour[len((*a).Tour)-2]]
+		distance := ts.TownSlice[(*a).Tour[len((*a).Tour)-2]].Distances[i]
 		(*a).Score += 1 / (1/distance + normalizedRating)
 		(*a).Distance += distance
 		if ts.IncludesHome {
@@ -111,6 +130,11 @@ func (a *Ant) visitNextTown(ts Towns) {
 		} else {
 			(*a).Rating = (((*a).Rating*(tourLength-1) + ts.TownSlice[i].Rating) / tourLength)
 		}
+		(*a).costState += ts.TownSlice[i].VisitDuration + distance
+		thisVisitSpan := make([]float64, 2)
+		thisVisitSpan[0] = (*a).VisitSpan[len((*a).VisitSpan)-1][1] + distance
+		thisVisitSpan[1] = thisVisitSpan[0] + ts.TownSlice[i].VisitDuration
+		(*a).VisitSpan = append((*a).VisitSpan, thisVisitSpan)
 	} else {
 		if normalizedRating > 0 {
 			(*a).Score += 1 / normalizedRating
@@ -118,9 +142,11 @@ func (a *Ant) visitNextTown(ts Towns) {
 		if !ts.IncludesHome {
 			(*a).Rating = ts.TownSlice[i].Rating
 		}
-
+		thisVisitSpan := make([]float64, 2)
+		thisVisitSpan[0] = ts.AvailabilityBounds.Start
+		thisVisitSpan[1] = thisVisitSpan[0] + ts.TownSlice[i].VisitDuration
+		(*a).VisitSpan = append((*a).VisitSpan, thisVisitSpan)
 	}
-
 }
 
 func (a *Ant) printAnt() {
@@ -133,6 +159,21 @@ func printAnts(a []Ant) {
 	}
 }
 
+func (a *Ant) isTourComplete(ts Towns, config AcoConfig) bool {
+	if len((*a).Tour) >= config.VisitQuantity {
+		(*a).tourComplete = true
+		return true
+	}
+
+	(*a).getProbabilityList(ts)
+	fmt.Println((*a).VisitSpan, (*a).Probabilities)
+	if math.IsNaN((*a).Probabilities[0]) {
+		(*a).tourComplete = true
+		return true
+	}
+	return false
+}
+
 func createAntSlice(n int, ts Towns, config AcoConfig) []Ant {
 	ants := []Ant{}
 
@@ -141,7 +182,7 @@ func createAntSlice(n int, ts Towns, config AcoConfig) []Ant {
 
 		myAnt.visitHome(ts)
 
-		for len(myAnt.Tour) < config.VisitQuantity {
+		for !myAnt.isTourComplete(ts, config) {
 			myAnt.visitNextTown(ts)
 		}
 

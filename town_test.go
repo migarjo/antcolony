@@ -76,3 +76,107 @@ func TestProbabilityMatrix(t *testing.T) {
 		}
 	}
 }
+
+func TestIsAvailable(t *testing.T) {
+
+	towns := Towns{
+		TownSlice: []Town{
+			Town{
+				AvailabilityBounds: AvailabilityBounds{
+					Start: 1,
+					End:   4,
+				},
+				VisitDuration: 1,
+				Distances: []float64{
+					0,
+					1.0,
+					2.0,
+					3.0,
+					4.0,
+				},
+			},
+			Town{
+				AvailabilityBounds: AvailabilityBounds{
+					Start: 0,
+					End:   0,
+				},
+				VisitDuration: 1,
+				Distances: []float64{
+					1.0,
+					0,
+					1.0,
+					2.0,
+					3.0,
+				},
+			},
+			Town{
+				AvailabilityBounds: AvailabilityBounds{
+					Start: 0,
+					End:   2,
+				},
+				VisitDuration: 1,
+				Distances: []float64{
+					2.0,
+					1.0,
+					0,
+					1.0,
+					2.0,
+				},
+			},
+			Town{
+				AvailabilityBounds: AvailabilityBounds{
+					Start: 4,
+					End:   6,
+				},
+				VisitDuration: 1,
+				Distances: []float64{
+					3.0,
+					2.0,
+					1.0,
+					0,
+					1.0,
+				},
+			},
+			Town{
+				AvailabilityBounds: AvailabilityBounds{
+					Start: 0,
+					End:   0,
+				},
+				VisitDuration: 1,
+				Distances: []float64{
+					4.0,
+					3.0,
+					2.0,
+					1.0,
+					0,
+				},
+			},
+		},
+	}
+
+	ant := Ant{
+		Tour: []int{
+			1,
+		},
+		VisitSpan: [][]float64{
+			[]float64{0, 1},
+		},
+		costState: 1,
+	}
+
+	if isAvailable(towns, &ant, 2) {
+		t.Error("Expected town not to be available when the cost of the visit is larger than the town's End")
+	}
+
+	if !isAvailable(towns, &ant, 0) {
+		t.Error("Expected town to be available when the cost of the visit is between or equal to Start and End")
+	}
+
+	if isAvailable(towns, &ant, 3) {
+		t.Error("Expected town not to be available when the cost of the visit is smaller than the town's Start")
+	}
+
+	if !isAvailable(towns, &ant, 4) {
+		t.Error("Expected town to be available when Start and End are 0")
+	}
+}

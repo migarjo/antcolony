@@ -14,7 +14,7 @@ type Town struct {
 	Distances          []float64 `json:"distances,omitEmpty"`
 	Trails             []float64 `json:"trails,omitEmpty"`
 	Rating             float64   `json:"rating,omitEmpty"`
-	Cost               float64   `json:"cost,omitEmpty"`
+	VisitDuration      float64   `json:"visitDuration,omitEmpty"`
 	AvailabilityBounds `json:"availabilityBounds,omitEmpty"`
 	IsRequired         bool        `json:"isRequired"`
 	NormalizedRating   float64     `json:"-"`
@@ -194,6 +194,24 @@ func (ts *Towns) calculateProbabilityMatrix(config AcoConfig) {
 			}
 		}
 	}
+}
+
+func isAvailable(ts Towns, a *Ant, i int) bool {
+	visitRange := make([]float64, 2)
+	if len((*a).Tour) == 0 {
+		visitRange = []float64{ts.AvailabilityBounds.Start, ts.AvailabilityBounds.Start + ts.TownSlice[i].VisitDuration}
+	} else {
+		distance := ts.TownSlice[(*a).Tour[len((*a).Tour)-1]].Distances[i]
+		visitRange[0] = (*a).VisitSpan[len((*a).VisitSpan)-1][1] + distance
+		visitRange[1] = visitRange[0] + ts.TownSlice[i].VisitDuration
+
+		fmt.Println((*a).VisitSpan[len((*a).VisitSpan)-1], distance)
+	}
+
+	isAvailable := (ts.TownSlice[i].AvailabilityBounds.Start == 0 || ts.TownSlice[i].AvailabilityBounds.Start <= visitRange[0]) &&
+		(ts.TownSlice[i].AvailabilityBounds.End == 0 || ts.TownSlice[i].AvailabilityBounds.End >= visitRange[1])
+	fmt.Println(ts.TownSlice[i].AvailabilityBounds, visitRange, isAvailable)
+	return isAvailable
 }
 
 func (t *Town) jsonify() []byte {
