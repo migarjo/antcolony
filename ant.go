@@ -29,7 +29,7 @@ type AverageResults struct {
 	Rating    float64 `json:"rating"`
 }
 
-func createAnt(thisID int, townQty int) Ant {
+func createAnt(thisID int, townQty int, config AcoConfig) Ant {
 	thisAnt := Ant{
 		ID:            thisID,
 		Tour:          []int{},
@@ -39,6 +39,10 @@ func createAnt(thisID int, townQty int) Ant {
 		Distance:      0,
 		Rating:        0,
 		VisitSpan:     [][]float64{},
+		availabilityBounds: AvailabilityBounds{
+			Start: config.AvailabilityBounds.Start,
+			End:   config.AvailabilityBounds.End,
+		},
 	}
 	return thisAnt
 }
@@ -178,19 +182,32 @@ func createAntSlice(n int, ts Towns, config AcoConfig) []Ant {
 	ants := []Ant{}
 
 	for a := 0; a < n; a++ {
-		myAnt := createAnt(a, len(ts.TownSlice))
+		myAnt := Ant{}
+		isTourLongEnough := false
+		for !isTourLongEnough {
+			tryCt := 0
+			for !isTourLongEnough && tryCt < 100 {
+				myAnt = createAnt(a, len(ts.TownSlice), config)
 
-		myAnt.visitHome(ts)
+				myAnt.visitHome(ts)
 
-		for !myAnt.isTourComplete(ts, config) {
-			myAnt.visitNextTown(ts)
+				for !myAnt.isTourComplete(ts, config) {
+					myAnt.visitNextTown(ts)
+				}
+				isTourLongEnough = getTourCapacityRatio(myAnt) > config.MinimumTripUsage
+				tryCt++
+			}
+			config.MinimumTripUsage *= .9
 		}
-
 		myAnt.returnHome(ts)
-
 		ants = append(ants, myAnt)
 	}
+
 	return ants
+}
+
+func getTourCapacityRatio(ant Ant) float64 {
+	return (ant.VisitSpan[len(ant.VisitSpan)-1][1] - ant.availabilityBounds.Start) / (ant.availabilityBounds.End - ant.availabilityBounds.Start)
 }
 
 func analyzeAnts(ants []Ant, bestAnts []Ant, averageArray []AverageResults) ([]Ant, []AverageResults) {
