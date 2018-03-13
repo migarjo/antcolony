@@ -8,15 +8,17 @@ import (
 
 //AcoConfig Configuration parameters for the ACO algorithm
 type AcoConfig struct {
-	NumberOfIterations int     `json:"numberOfIterations"`
-	TrailPreference    float64 `json:"trailPreference"`
-	RatingPreference   float64 `json:"ratingPreference"`
-	DistancePreference float64 `json:"distancePreference"`
-	PheremoneStrength  float64 `json:"pheremoneStrength"`
-	EvaporationRate    float64 `json:"evaporationRate"`
-	MaximizeRating     bool    `json:"maximizeRating"`
-	VisitQuantity      int     `json:"visitQuantity"`
-	Verbose            bool    `json:"verbose"`
+	NumberOfIterations int                `json:"numberOfIterations"`
+	TrailPreference    float64            `json:"trailPreference"`
+	RatingPreference   float64            `json:"ratingPreference"`
+	DistancePreference float64            `json:"distancePreference"`
+	PheremoneStrength  float64            `json:"pheremoneStrength"`
+	EvaporationRate    float64            `json:"evaporationRate"`
+	MaximizeRating     bool               `json:"maximizeRating"`
+	VisitQuantity      int                `json:"visitQuantity"`
+	Verbose            bool               `json:"verbose"`
+	TripBounds         AvailabilityBounds `json:"tripBounds"`
+	MinimumTripUsage   float64            `json:"minimumTripUsage"`
 }
 
 // Inputs Input parameters, including configuration and towns
@@ -61,6 +63,11 @@ func importInputs(inputsJSON []byte) (AcoConfig, Towns, error) {
 			EvaporationRate:    .8,
 			VisitQuantity:      0,
 			Verbose:            false,
+			MinimumTripUsage:   0.9,
+			TripBounds: AvailabilityBounds{
+				Start: 0,
+				End:   0,
+			},
 		},
 		Towns: Towns{
 			IncludesHome: true,

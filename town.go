@@ -10,23 +10,32 @@ import (
 
 // Town is the Node struct for each destination in the TSP
 type Town struct {
-	ID               int         `json:"id,omitEmpty"`
-	Distances        []float64   `json:"distances,omitEmpty"`
-	Trails           []float64   `json:"trails,omitEmpty"`
-	Rating           float64     `json:"rating,omitEmpty"`
-	IsRequired       bool        `json:"isRequired"`
-	NormalizedRating float64     `json:"-"`
-	TrailHistory     [][]float64 `json:"trailHistory,omitEmpty"`
+	ID                 int       `json:"id,omitEmpty"`
+	Distances          []float64 `json:"distances,omitEmpty"`
+	Trails             []float64 `json:"trails,omitEmpty"`
+	Rating             float64   `json:"rating,omitEmpty"`
+	VisitDuration      float64   `json:"visitDuration,omitEmpty"`
+	AvailabilityBounds `json:"availabilityBounds,omitEmpty"`
+	IsRequired         bool        `json:"isRequired"`
+	TrailHistory       [][]float64 `json:"trailHistory,omitEmpty"`
+	normalizedRating   float64
 }
 
 // Towns is the collection of nodes for the TSP, with a matrix of the probability of traversing between each town
 type Towns struct {
-	IncludesHome              bool          `json:"includesHome"`
+	IncludesHome              bool `json:"includesHome"`
+	AvailabilityBounds        `json:"availabilityBounds,omitEmpty"`
 	TownSlice                 []Town        `json:"towns"`
 	ProbabilityHistory        [][][]float64 `json:"probabilityHistory,omitEmpty"`
 	NoTrailProbabilityHistory [][][]float64 `json:"noTrailProbabilityHistory,omitEmpty"`
 	requiredTownsVisited      []bool
 	probabilityMatrix         [][]float64
+}
+
+// AvailabilityBounds allows a user to set time limits on availability for a town or limits to the total time of activity.
+type AvailabilityBounds struct {
+	Start float64 `json:"start,omitEmpty"`
+	End   float64 `json:"end,omitEmpty"`
 }
 
 func (ts *Towns) initializeTowns(config AcoConfig) error {
@@ -84,6 +93,10 @@ func (ts *Towns) initializeTowns(config AcoConfig) error {
 
 	}
 
+	if ((*ts).AvailabilityBounds.Start != 0.0 && (*ts).AvailabilityBounds.End == 0.0) || (*ts).AvailabilityBounds.Start == 0.0 && (*ts).AvailabilityBounds.End != 0.0 {
+		return ApplicationError{"Availability bounds for the trip are inconsistent. One is null or zero while the other is non-zero"}
+	}
+
 	(*ts).normalizeTownRatings(config)
 
 	return nil
@@ -120,7 +133,7 @@ func (t *Town) updateTrails(ants []Ant, config AcoConfig) {
 func (ts *Towns) normalizeTownRatings(config AcoConfig) {
 	if config.RatingPreference == 0 {
 		for i := range ts.TownSlice {
-			(*ts).TownSlice[i].NormalizedRating = 0
+			(*ts).TownSlice[i].normalizedRating = 0
 		}
 	} else {
 		maxRating := ts.TownSlice[1].Rating
@@ -144,18 +157,18 @@ func (ts *Towns) normalizeTownRatings(config AcoConfig) {
 		maxDistanceFactor := 1.0 / minDistance
 		if minRating == maxRating {
 			for i := range ts.TownSlice {
-				(*ts).TownSlice[i].NormalizedRating = 0
+				(*ts).TownSlice[i].normalizedRating = 0
 			}
 		} else {
 			if config.MaximizeRating == true {
 				for i := range ts.TownSlice {
-					(*ts).TownSlice[i].NormalizedRating = config.RatingPreference * maxDistanceFactor * ((*ts).TownSlice[i].Rating - minRating) / (maxRating - minRating)
+					(*ts).TownSlice[i].normalizedRating = config.RatingPreference * maxDistanceFactor * ((*ts).TownSlice[i].Rating - minRating) / (maxRating - minRating)
 				}
 			}
 		}
 		if (*ts).IncludesHome {
 			(*ts).TownSlice[0].Rating = 0
-			(*ts).TownSlice[0].NormalizedRating = 0
+			(*ts).TownSlice[0].normalizedRating = 0
 		}
 	}
 }
@@ -172,14 +185,14 @@ func (ts *Towns) calculateProbabilityMatrix(config AcoConfig) {
 
 	for i, t := range (*ts).TownSlice {
 		for j := range (*ts).TownSlice[i].Trails {
-			probability := math.Pow(t.Trails[j], config.TrailPreference) * math.Pow((1.0/t.Distances[j]+t.NormalizedRating), config.DistancePreference)
+			probability := math.Pow(t.Trails[j], config.TrailPreference) * math.Pow((1.0/t.Distances[j]+t.normalizedRating), config.DistancePreference)
 			if math.IsInf(probability, 0) {
 				(*ts).probabilityMatrix[i][j] = 0
 			} else {
 				(*ts).probabilityMatrix[i][j] = probability
 			}
 			if config.Verbose {
-				noTrailProbability := math.Pow((1.0/t.Distances[j] + t.NormalizedRating), config.DistancePreference)
+				noTrailProbability := math.Pow((1.0/t.Distances[j] + t.normalizedRating), config.DistancePreference)
 				n := len((*ts).NoTrailProbabilityHistory) - 1
 
 				if math.IsInf(noTrailProbability, 0) {
@@ -197,6 +210,22 @@ func (ts *Towns) calculateProbabilityMatrix(config AcoConfig) {
 			}
 		}
 	}
+}
+
+func isAvailable(ts Towns, a *Ant, i int) bool {
+	visitRange := make([]float64, 2)
+	if len((*a).Tour) == 0 {
+		visitRange = []float64{ts.AvailabilityBounds.Start, ts.AvailabilityBounds.Start + ts.TownSlice[i].VisitDuration}
+	} else {
+		distance := ts.TownSlice[(*a).Tour[len((*a).Tour)-1]].Distances[i]
+		visitRange[0] = (*a).VisitSpan[len((*a).VisitSpan)-1][1] + distance
+		visitRange[1] = visitRange[0] + ts.TownSlice[i].VisitDuration
+	}
+
+	isAvailable := (ts.TownSlice[i].AvailabilityBounds.Start == 0 || ts.TownSlice[i].AvailabilityBounds.Start <= visitRange[0]) &&
+		(ts.TownSlice[i].AvailabilityBounds.End == 0 || ts.TownSlice[i].AvailabilityBounds.End >= visitRange[1]) &&
+		((*a).tripBounds.End == 0 || (*a).tripBounds.End >= visitRange[1])
+	return isAvailable
 }
 
 func (t *Town) jsonify() []byte {
