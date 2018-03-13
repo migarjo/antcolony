@@ -25,8 +25,7 @@ type Town struct {
 type Towns struct {
 	IncludesHome              bool `json:"includesHome"`
 	AvailabilityBounds        `json:"availabilityBounds,omitEmpty"`
-	TownSlice                 []Town `json:"towns"`
-	probabilityMatrix         [][]float64
+	TownSlice                 []Town        `json:"towns"`
 	ProbabilityHistory        [][][]float64 `json:"probabilityHistory,omitEmpty"`
 	NoTrailProbabilityHistory [][][]float64 `json:"noTrailProbabilityHistory,omitEmpty"`
 	requiredTownsVisited      []bool
