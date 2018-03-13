@@ -122,6 +122,7 @@ func (a *Ant) visitNextTown(ts Towns) {
 		i++
 	}
 	(*a).Tour = append((*a).Tour, i)
+	tourLength := float64(len((*a).Tour))
 	(*a).Visited[i] = true
 	normalizedRating := ts.TownSlice[i].NormalizedRating
 	if tourLength > 1 {
