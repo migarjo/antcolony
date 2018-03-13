@@ -78,9 +78,13 @@ func importInputs(inputsJSON []byte) (AcoConfig, Towns, error) {
 	if err != nil {
 		return inputs.AcoConfig, inputs.Towns, ApplicationError{"Error parsing input JSON: " + err.Error()}
 	}
-	fmt.Println(inputs.AcoConfig.PheremoneStrength)
+
 	if inputs.AcoConfig.VisitQuantity == 0 {
 		inputs.AcoConfig.VisitQuantity = len(inputs.Towns.TownSlice)
+	}
+
+	if inputs.Towns.IncludesHome {
+		inputs.Towns.TownSlice[0].IsRequired = true
 	}
 
 	return inputs.AcoConfig, inputs.Towns, nil

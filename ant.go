@@ -122,7 +122,6 @@ func (a *Ant) visitNextTown(ts Towns) {
 		i++
 	}
 	(*a).Tour = append((*a).Tour, i)
-	tourLength := float64(len((*a).Tour))
 	(*a).Visited[i] = true
 	normalizedRating := ts.TownSlice[i].NormalizedRating
 	if tourLength > 1 {
@@ -239,6 +238,108 @@ func analyzeAnts(ants []Ant, bestAnts []Ant, averageArray []AverageResults) ([]A
 	averageArray = append(averageArray, averageResults)
 
 	return bestAnts, averageArray
+}
+
+func (a *Ant) substituteRequiredTowns(ts Towns, unvisitedRequiredTowns []int) {
+
+	randSource.Shuffle(len(unvisitedRequiredTowns), func(i, j int) {
+		unvisitedRequiredTowns[i], unvisitedRequiredTowns[j] = unvisitedRequiredTowns[j], unvisitedRequiredTowns[i]
+	})
+
+	for _, unvisitedTownID := range unvisitedRequiredTowns {
+		a.substituteTown(ts, unvisitedTownID)
+	}
+	a.Score, a.Distance, a.Rating = calculateAntResults((*a).Tour, ts)
+}
+
+func calculateAntResults(tour []int, ts Towns) (float64, float64, float64) {
+	distance := 0.0
+	score := 0.0
+	rating := 0.0
+	ratingSum := 0.0
+	for tourIndex, location := range tour {
+		normalizedRating := ts.TownSlice[location].NormalizedRating
+		if tourIndex > 0 {
+			legDistance := ts.TownSlice[location].Distances[tour[tourIndex-1]]
+			score += 1 / (1/legDistance + normalizedRating)
+			distance += legDistance
+			ratingSum += ts.TownSlice[location].Rating
+		} else {
+			if normalizedRating > 0 {
+				score += 1 / normalizedRating
+			}
+			if !ts.IncludesHome {
+				ratingSum += ts.TownSlice[location].Rating
+			}
+		}
+	}
+	if ts.IncludesHome {
+		rating = ratingSum / float64(len(tour)-2)
+	} else {
+		rating = ratingSum / float64(len(tour))
+	}
+	return score, distance, rating
+}
+
+func (a *Ant) getReplaceProbabilityList(ts Towns, unvisitedTown int) {
+	originalNumeratorArray := make([]float64, len(ts.TownSlice))
+	replacementNumeratorArray := make([]float64, len(ts.TownSlice))
+	numeratorDiffArray := make([]float64, len(ts.TownSlice))
+	minimumNumeratorDiff := 0.0
+	diffDenom := 0.0
+
+	for j, visitedTown := range a.Tour {
+		if !ts.TownSlice[visitedTown].IsRequired {
+			if j == 0 {
+				originalNumeratorArray[visitedTown] = 2 * ts.probabilityMatrix[visitedTown][a.Tour[1]]
+				replacementNumeratorArray[visitedTown] = 2 * ts.probabilityMatrix[unvisitedTown][a.Tour[1]]
+			} else if j == len(a.Tour)-1 {
+				originalNumeratorArray[visitedTown] = 2 * ts.probabilityMatrix[visitedTown][a.Tour[len(a.Tour)-2]]
+				replacementNumeratorArray[visitedTown] = 2 * ts.probabilityMatrix[unvisitedTown][a.Tour[len(a.Tour)-2]]
+			} else {
+				originalNumeratorArray[visitedTown] = ts.probabilityMatrix[visitedTown][a.Tour[j-1]] + ts.probabilityMatrix[visitedTown][a.Tour[j+1]]
+				replacementNumeratorArray[visitedTown] = ts.probabilityMatrix[unvisitedTown][a.Tour[j-1]] + ts.probabilityMatrix[unvisitedTown][a.Tour[j+1]]
+			}
+			numeratorDiffArray[visitedTown] = replacementNumeratorArray[visitedTown] - originalNumeratorArray[visitedTown]
+			if j == 0 || numeratorDiffArray[visitedTown] < minimumNumeratorDiff {
+				minimumNumeratorDiff = numeratorDiffArray[visitedTown]
+			}
+		}
+	}
+
+	fmt.Println("Diff array", numeratorDiffArray)
+	for i := range numeratorDiffArray {
+		if !ts.TownSlice[i].IsRequired && a.Visited[i] {
+			numeratorDiffArray[i] -= minimumNumeratorDiff
+			diffDenom += numeratorDiffArray[i]
+		}
+	}
+
+	for i := range replacementNumeratorArray {
+		if i == 0 {
+			(*a).Probabilities[i] = numeratorDiffArray[i] / diffDenom
+		} else {
+			(*a).Probabilities[i] = (*a).Probabilities[i-1] + numeratorDiffArray[i]/diffDenom
+		}
+	}
+}
+
+func (a *Ant) substituteTown(ts Towns, unvisitedTownIndex int) {
+	(*a).getReplaceProbabilityList(ts, unvisitedTownIndex)
+	randFloat := randSource.Float64()
+	replaceTownIndex := 0
+	for randFloat > (*a).Probabilities[replaceTownIndex] {
+		replaceTownIndex++
+	}
+
+	replaceLocation := 0
+	for replaceTownIndex != (*a).Tour[replaceLocation] {
+		replaceLocation++
+	}
+
+	(*a).Visited[replaceTownIndex] = false
+	(*a).Tour[replaceLocation] = unvisitedTownIndex
+	(*a).Visited[unvisitedTownIndex] = true
 }
 
 func (a *Ant) exportAnt() string {
