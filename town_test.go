@@ -93,6 +93,7 @@ func TestIsAvailable(t *testing.T) {
 					2.0,
 					3.0,
 					4.0,
+					14.0,
 				},
 			},
 			Town{
@@ -107,6 +108,7 @@ func TestIsAvailable(t *testing.T) {
 					1.0,
 					2.0,
 					3.0,
+					13.0,
 				},
 			},
 			Town{
@@ -121,6 +123,7 @@ func TestIsAvailable(t *testing.T) {
 					0,
 					1.0,
 					2.0,
+					12.0,
 				},
 			},
 			Town{
@@ -135,6 +138,7 @@ func TestIsAvailable(t *testing.T) {
 					1.0,
 					0,
 					1.0,
+					11.0,
 				},
 			},
 			Town{
@@ -149,6 +153,22 @@ func TestIsAvailable(t *testing.T) {
 					2.0,
 					1.0,
 					0,
+					10.0,
+				},
+			},
+			Town{
+				AvailabilityBounds: AvailabilityBounds{
+					Start: 0,
+					End:   0,
+				},
+				VisitDuration: 1,
+				Distances: []float64{
+					14.0,
+					13.0,
+					12.0,
+					11.0,
+					10.0,
+					0,
 				},
 			},
 		},
@@ -162,6 +182,9 @@ func TestIsAvailable(t *testing.T) {
 			[]float64{0, 1},
 		},
 		costState: 1,
+		tripBounds: AvailabilityBounds{
+			End: 13,
+		},
 	}
 
 	if isAvailable(towns, &ant, 2) {
@@ -179,4 +202,9 @@ func TestIsAvailable(t *testing.T) {
 	if !isAvailable(towns, &ant, 4) {
 		t.Error("Expected town to be available when Start and End are 0")
 	}
+
+	if isAvailable(towns, &ant, 5) {
+		t.Error("Expected town to be unavailable when the cost of the trip is larger than the trip's End")
+	}
+
 }

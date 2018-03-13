@@ -220,13 +220,11 @@ func isAvailable(ts Towns, a *Ant, i int) bool {
 		distance := ts.TownSlice[(*a).Tour[len((*a).Tour)-1]].Distances[i]
 		visitRange[0] = (*a).VisitSpan[len((*a).VisitSpan)-1][1] + distance
 		visitRange[1] = visitRange[0] + ts.TownSlice[i].VisitDuration
-
-		fmt.Println((*a).VisitSpan[len((*a).VisitSpan)-1], distance)
 	}
 
 	isAvailable := (ts.TownSlice[i].AvailabilityBounds.Start == 0 || ts.TownSlice[i].AvailabilityBounds.Start <= visitRange[0]) &&
-		(ts.TownSlice[i].AvailabilityBounds.End == 0 || ts.TownSlice[i].AvailabilityBounds.End >= visitRange[1])
-	fmt.Println(ts.TownSlice[i].AvailabilityBounds, visitRange, isAvailable)
+		(ts.TownSlice[i].AvailabilityBounds.End == 0 || ts.TownSlice[i].AvailabilityBounds.End >= visitRange[1]) &&
+		((*a).tripBounds.End == 0 || (*a).tripBounds.End >= visitRange[1])
 	return isAvailable
 }
 
