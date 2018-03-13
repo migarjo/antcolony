@@ -83,7 +83,7 @@ func TestIsAvailable(t *testing.T) {
 		TownSlice: []Town{
 			Town{
 				AvailabilityBounds: AvailabilityBounds{
-					Start: 1,
+					Start: 0,
 					End:   4,
 				},
 				VisitDuration: 1,
@@ -187,6 +187,13 @@ func TestIsAvailable(t *testing.T) {
 		},
 	}
 
+	freshAnt := Ant{
+		costState: 1,
+		tripBounds: AvailabilityBounds{
+			End: 13,
+		},
+	}
+
 	if isAvailable(towns, &ant, 2) {
 		t.Error("Expected town not to be available when the cost of the visit is larger than the town's End")
 	}
@@ -205,6 +212,14 @@ func TestIsAvailable(t *testing.T) {
 
 	if isAvailable(towns, &ant, 5) {
 		t.Error("Expected town to be unavailable when the cost of the trip is larger than the trip's End")
+	}
+
+	if !isAvailable(towns, &freshAnt, 0) {
+		t.Error("Expected town to be available when the ant starts at a town and the visit Duration fits within the availability bounds of the town")
+	}
+
+	if isAvailable(towns, &freshAnt, 3) {
+		t.Error("Expected town to be available when the ant starts at a town and the visit Duration fits within the availability bounds of the town")
 	}
 
 }
