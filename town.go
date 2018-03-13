@@ -17,8 +17,8 @@ type Town struct {
 	VisitDuration      float64   `json:"visitDuration,omitEmpty"`
 	AvailabilityBounds `json:"availabilityBounds,omitEmpty"`
 	IsRequired         bool        `json:"isRequired"`
-	NormalizedRating   float64     `json:"-"`
 	TrailHistory       [][]float64 `json:"trailHistory,omitEmpty"`
+	normalizedRating   float64
 }
 
 // Towns is the collection of nodes for the TSP, with a matrix of the probability of traversing between each town
@@ -133,7 +133,7 @@ func (t *Town) updateTrails(ants []Ant, config AcoConfig) {
 func (ts *Towns) normalizeTownRatings(config AcoConfig) {
 	if config.RatingPreference == 0 {
 		for i := range ts.TownSlice {
-			(*ts).TownSlice[i].NormalizedRating = 0
+			(*ts).TownSlice[i].normalizedRating = 0
 		}
 	} else {
 		maxRating := ts.TownSlice[1].Rating
@@ -157,18 +157,18 @@ func (ts *Towns) normalizeTownRatings(config AcoConfig) {
 		maxDistanceFactor := 1.0 / minDistance
 		if minRating == maxRating {
 			for i := range ts.TownSlice {
-				(*ts).TownSlice[i].NormalizedRating = 0
+				(*ts).TownSlice[i].normalizedRating = 0
 			}
 		} else {
 			if config.MaximizeRating == true {
 				for i := range ts.TownSlice {
-					(*ts).TownSlice[i].NormalizedRating = config.RatingPreference * maxDistanceFactor * ((*ts).TownSlice[i].Rating - minRating) / (maxRating - minRating)
+					(*ts).TownSlice[i].normalizedRating = config.RatingPreference * maxDistanceFactor * ((*ts).TownSlice[i].Rating - minRating) / (maxRating - minRating)
 				}
 			}
 		}
 		if (*ts).IncludesHome {
 			(*ts).TownSlice[0].Rating = 0
-			(*ts).TownSlice[0].NormalizedRating = 0
+			(*ts).TownSlice[0].normalizedRating = 0
 		}
 	}
 }
@@ -185,14 +185,14 @@ func (ts *Towns) calculateProbabilityMatrix(config AcoConfig) {
 
 	for i, t := range (*ts).TownSlice {
 		for j := range (*ts).TownSlice[i].Trails {
-			probability := math.Pow(t.Trails[j], config.TrailPreference) * math.Pow((1.0/t.Distances[j]+t.NormalizedRating), config.DistancePreference)
+			probability := math.Pow(t.Trails[j], config.TrailPreference) * math.Pow((1.0/t.Distances[j]+t.normalizedRating), config.DistancePreference)
 			if math.IsInf(probability, 0) {
 				(*ts).probabilityMatrix[i][j] = 0
 			} else {
 				(*ts).probabilityMatrix[i][j] = probability
 			}
 			if config.Verbose {
-				noTrailProbability := math.Pow((1.0/t.Distances[j] + t.NormalizedRating), config.DistancePreference)
+				noTrailProbability := math.Pow((1.0/t.Distances[j] + t.normalizedRating), config.DistancePreference)
 				n := len((*ts).NoTrailProbabilityHistory) - 1
 
 				if math.IsInf(noTrailProbability, 0) {

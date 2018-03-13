@@ -17,7 +17,7 @@ type AcoConfig struct {
 	MaximizeRating     bool               `json:"maximizeRating"`
 	VisitQuantity      int                `json:"visitQuantity"`
 	Verbose            bool               `json:"verbose"`
-	AvailabilityBounds AvailabilityBounds `json:"availabilityBounds"`
+	TripBounds         AvailabilityBounds `json:"tripBounds"`
 	MinimumTripUsage   float64            `json:"minimumTripUsage"`
 }
 
@@ -64,7 +64,7 @@ func importInputs(inputsJSON []byte) (AcoConfig, Towns, error) {
 			VisitQuantity:      0,
 			Verbose:            false,
 			MinimumTripUsage:   0.9,
-			AvailabilityBounds: AvailabilityBounds{
+			TripBounds: AvailabilityBounds{
 				Start: 0,
 				End:   0,
 			},
